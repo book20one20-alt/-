@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activity Tracker & Productivity Analyzer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.18/index.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0f1117;
+            --bg-card: #1c1f2e;
+            --border: #2d3148;
+            --accent: #6366f1;
+        }
+        * { font-family: 'Inter', system-ui, sans-serif; box-sizing: border-box; }
+        body { background: var(--bg-primary); color: #e2e4f0; min-height: 100vh; margin: 0; }
+        .glass { background: var(--bg-card); border: 1px solid var(--border); backdrop-filter: blur(12px); }
+        .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; }
+        .input-dark { background: rgba(22,24,34,0.8); border: 1px solid var(--border); color: #e2e4f0; transition: all 0.2s; }
+        .input-dark:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
+        .btn-primary { background: linear-gradient(135deg, #6366f1, #4f46e5); color: white; font-weight: 600; transition: all 0.2s; }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(99,102,241,0.25); }
+        .category-badge { font-size: 0.7rem; padding: 3px 10px; border-radius: 999px; font-weight: 600; }
+        .cat-Work { background: rgba(34,197,94,0.15); color: #22c55e; border: 1px solid rgba(34,197,94,0.3); }
+        .cat-Personal { background: rgba(139,92,246,0.15); color: #8b5cf6; border: 1px solid rgba(139,92,246,0.3); }
+        .cat-Rest { background: rgba(59,130,246,0.15); color: #3b82f6; border: 1px solid rgba(59,130,246,0.3); }
+        .cat-Development { background: rgba(234,179,8,0.15); color: #eab308; border: 1px solid rgba(234,179,8,0.3); }
+        .cat-Waste { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
+        .focus-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+        .fh { background: #22c55e; }
+        .fm { background: #eab308; }
+        .fl { background: #ef4444; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .af { animation: fadeIn 0.35s ease-out forwards; }
+        .progress-bar { height: 8px; background: rgba(45,49,72,0.8); border-radius: 4px; overflow: hidden; }
+        .progress-fill { height: 100%; border-radius: 4px; transition: width 0.8s ease-out; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0f1117; }
+        ::-webkit-scrollbar-thumb { background: #2d3148; border-radius: 3px; }
+        .alert-box { border-left: 4px solid; padding: 14px; border-radius: 8px; }
+        .tab-btn { padding: 10px 20px; border-radius: 10px; font-weight: 600; font-size: 0.875rem; transition: all 0.2s; border: 1px solid transparent; cursor: pointer; }
+        .tab-btn.active { background: rgba(99,102,241,0.15); border-color: #6366f1; color: #6366f1; }
+        .tab-btn:not(.active) { color: #8b8fa3; border-color: #2d3148; }
+        .tab-btn:not(.active):hover { background: rgba(45,49,72,0.5); }
+        .toast { position: fixed; bottom: 24px; right: 24px; padding: 14px 24px; border-radius: 10px; font-weight: 600; z-index: 100; animation: slideIn 0.3s ease-out; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(100%); } to { opacity: 1; transform: translateX(0); } }
+        .pulse-red { animation: pulseR 2s infinite; }
+        @keyframes pulseR { 0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); } 50% { box-shadow: 0 0 0 8px rgba(239,68,68,0); } }
+        .glass-hover:hover { background: rgba(30,33,50,0.9); transform: translateY(-2px); transition: all 0.2s; }
+    </style>
+</head>
+<body>
+
+<header class="sticky top-0 z-50 glass border-b border-gray-800/60">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between flex-wrap gap-2">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-lg">AT</div>
+            <div>
+                <h1 class="text-lg font-bold text-white">Activity Tracker</h1>
+                <p class="text-xs text-gray-500">Data-driven feedback. No excuses.</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <span id="currentDate" class="text-xs text-gray-400 bg-gray-800/50 px-3 py-1.5 rounded-lg"></span>
+            <button onclick="loadSample()" class="text-xs text-blue-400 hover:text-blue-300 px-3 py-1.5 rounded-lg hover:bg-gray-800/50 transition">Load Demo</button>
+            <button onclick="clearAll()" class="text-xs text-gray-500 hover:text-red-400 px-3 py-1.5 rounded-lg hover:bg-gray-800/50 transition">Clear All</button>
+        </div>
+    </div>
+</header>
+
+<main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+
+    <!-- Input -->
+    <section class="card p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-base font-bold text-white">Log Activity</h2>
+            <span id="entryCount" class="text-xs text-gray-500 bg-gray-800/50 px-3 py-1 rounded-lg">0 entries</span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 mb-4">
+            <div><label class="text-xs text-gray-500 mb-1 block">Start Time</label><input type="time" id="startTime" class="input-dark w-full rounded-lg px-3 py-2 text-sm" value="08:00"></div>
+            <div><label class="text-xs text-gray-500 mb-1 block">End Time</label><input type="time" id="endTime" class="input-dark w-full rounded-lg px-3 py-2 text-sm" value="09:00"></div>
+            <div><label class="text-xs text-gray-500 mb-1 block">Activity</label><input type="text" id="actName" class="input-dark w-full rounded-lg px-3 py-2 text-sm" placeholder="e.g., Review emails"></div>
+            <div><label class="text-xs text-gray-500 mb-1 block">Category</label><select id="cat" class="input-dark w-full rounded-lg px-3 py-2 text-sm"><option value="Work"> Work</option><option value="Personal"> Personal</option><option value="Rest"> Rest</option><option value="Development"> Development</option><option value="Waste"> Waste</option></select></div>
+            <div><label class="text-xs text-gray-500 mb-1 block">Focus (1-5)</label><input type="number" id="focusLvl" class="input-dark w-full rounded-lg px-3 py-2 text-sm" min="1" max="5" value="3"></div>
+            <div><label class="text-xs text-gray-500 mb-1 block">Notes</label><input type="text" id="note" class="input-dark w-full rounded-lg px-3 py-2 text-sm" placeholder="Brief note..."></div>
+        </div>
+        <div class="flex gap-3 flex-wrap">
+            <button onclick="addEntry()" class="btn-primary px-5 py-2 rounded-lg text-sm">Add Activity</button>
+            <button onclick="quickAdd()" class="bg-gray-700/50 hover:bg-gray-700 text-white px-5 py-2 rounded-lg text-sm font-semibold transition border border-gray-600/50">Quick Add (60m)</button>
+            <span class="text-xs text-gray-600 self-center">Ctrl+Enter to submit</span>
+        </div>
+    </section>
+
+    <!-- Stats -->
+    <section id="statsSec" class="hidden grid grid-cols-2 lg:grid-cols-5 gap-3">
+        <div class="card p-4 text-center glass-hover"><div class="text-2xl font-bold text-green-400" id="sTotal">0h</div><div class="text-xs text-gray-500 mt-1">Total Hours</div></div>
+        <div class="card p-4 text-center glass-hover"><div class="text-2xl font-bold text-green-400" id="sProd">0h</div><div class="text-xs text-gray-500 mt-1">Productive</div></div>
+        <div class="card p-4 text-center glass-hover"><div class="text-2xl font-bold text-red-400" id="sWaste">0h</div><div class="text-xs text-gray-500 mt-1">Wasted</div></div>
+        <div class="card p-4 text-center glass-hover"><div class="text-2xl font-bold text-yellow-400" id="sFocus">0.0</div><div class="text-xs text-gray-500 mt-1">Avg Focus</div></div>
+        <div class="card p-4 text-center glass-hover"><div class="text-2xl font-bold text-blue-400" id="sPeak">--:--</div><div class="text-xs text-gray-500 mt-1">Peak Hour</div></div>
+    </section>
+
+    <!-- Tabs -->
+    <div class="flex gap-2 flex-wrap">
+        <button onclick="switchTab('table')" id="tab-table" class="tab-btn active">Table</button>
+        <button onclick="switchTab('analysis')" id="tab-analysis" class="tab-btn">Analysis</button>
+        <button onclick="switchTab('feedback')" id="tab-feedback" class="tab-btn">AI Feedback</button>
+    </div>
+
+    <!-- Table -->
+    <section id="content-table" class="card overflow-hidden">
+        <div class="p-4 border-b border-gray-800/60 flex items-center justify-between">
+            <h3 class="font-bold text-white text-sm">Activity Log</h3>
+            <div class="flex gap-2">
+                <button onclick="doSort('time')" class="text-xs bg-gray-700/50 hover:bg-gray-700 text-gray-300 px-3 py-1.5 rounded-lg transition">Sort Time</button>
+                <button onclick="doSort('focus')" class="text-xs bg-gray-700/50 hover:bg-gray-700 text-gray-300 px-3 py-1.5 rounded-lg transition">Sort Focus</button>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="border-b border-gray-800/60 bg-gray-900/30">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-gray-500 font-bold text-xs uppercase tracking-wider">Time</th>
+                        <th class="px-4 py-3 text-left text-gray-500 font-bold text-xs uppercase tracking-wider">Activity</th>
+                        <th class="px-4 py-3 text-left text-gray-500 font-bold text-xs uppercase tracking-wider">Category</th>
+                        <th class="px-4 py-3 text-left text-gray-500 font-bold text-xs uppercase tracking-wider">Focus</th>
+                        <th class="px-4 py-3 text-left text-gray-500 font-bold text-xs uppercase tracking-wider">Duration</th>
+                        <th class="px-4 py-3 text-left text-gray-500 font-bold text-xs uppercase tracking-wider">Notes</th>
+                        <th class="px-4 py-3 text-center text-gray-500 font-bold text-xs uppercase tracking-wider">Del</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody"></tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Analysis -->
+    <section id="content-analysis" class="hidden space-y-4">
+        <div class="card p-6 text-center">
+            <h3 class="text-sm text-gray-400 mb-2">Productivity Score</h3>
+            <div id="oScore" class="text-5xl font-black mb-2">--</div>
+            <div id="sLabel" class="text-sm font-bold"></div>
+            <div class="progress-bar mt-4 max-w-sm mx-auto"><div id="sBar" class="progress-fill" style="width:0%"></div></div>
+        </div>
+        <div class="card p-5"><h3 class="font-bold text-white mb-4 text-sm">Time Distribution</h3><div id="catBreak" class="space-y-3"></div></div>
+        <div class="card p-5"><h3 class="font-bold text-red-400 mb-4 text-sm">Time Waste Detection</h3><div id="wasteDet"></div></div>
+        <div class="card p-5"><h3 class="font-bold text-blue-400 mb-4 text-sm">Focus Analysis</h3><div id="focusDet"></div></div>
+        <div class="card p-5"><h3 class="font-bold text-green-400 mb-4 text-sm">Peak Performance Window</h3><div id="peakDet"></div></div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="card p-5"><h3 class="font-bold text-white mb-4 text-sm">Category Distribution</h3><canvas id="catChart"></canvas></div>
+            <div class="card p-5"><h3 class="font-bold text-white mb-4 text-sm">Focus Over Time</h3><canvas id="focusLine"></canvas></div>
+        </div>
+    </section>
+
+    <!-- Feedback -->
+    <section id="content-feedback" class="hidden space-y-4">
+        <div class="card p-5"><h3 class="font-bold text-red-400 mb-4 text-base">3 Critical Problems</h3><div id="probList" class="space-y-3"></div></div>
+        <div class="card p-5"><h3 class="font-bold text-green-400 mb-4 text-base">3 Immediate Fixes</h3><div id="fixList" class="space-y-3"></div></div>
+        <div class="card p-5 pulse-red" style="border: 2px solid rgba(239,68,68,0.2);"><h3 class="font-bold text-red-400 mb-4 text-base">Strict Verdict</h3><div id="verdict" class="text-sm leading-relaxed text-gray-300"></div></div>
+    </section>
+
+</main>
+
+<footer class="text-center py-6 text-xs text-gray-700 border-t border-gray-800/50 mt-8">Activity Tracker — Results speak. No excuses.</footer>
+
+<script>
+let entries = [];
+let charts = {};
+
+document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+function t2m(t) { const [h,m]=t.split(':').map(Number); return h*60+m; }
+function m2t(m) { return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'); }
+function dur(s,e) { let d=t2m(e)-t2m(s); return d<0?d+1440:d; }
+
+function addEntry() {
+    const s=document.getElementById('startTime').value;
+    const e=document.getElementById('endTime').value;
+    const n=document.getElementById('actName').value.trim();
+    const c=document.getElementById('cat').value;
+    const f=parseInt(document.getElementById('focusLvl').value);
+    const nt=document.getElementById('note').value.trim();
+    if(!s||!e||!n) return toast('Fill all required fields','error');
+    if(f<1||f>5) return toast('Focus must be 1-5','error');
+    const d=dur(s,e);
+    if(d<=0) return toast('End must be after start','error');
+    entries.push({id:Date.now(),start:s,end:e,name:n,category:c,focus:f,notes:nt,duration:d});
+    document.getElementById('startTime').value=e;
+    document.getElementById('endTime').value=m2t(t2m(e)+60);
+    document.getElementById('actName').value='';
+    document.getElementById('note').value='';
+    toast('Activity added','success');
+    refresh();
+}
+
+function quickAdd() {
+    const s=document.getElementById('startTime').value;
+    const e=m2t(t2m(s)+60);
+    const n=document.getElementById('actName').value.trim()||'Quick Activity';
+    const c=document.getElementById('cat').value;
+    const f=parseInt(document.getElementById('focusLvl').value);
+    const nt=document.getElementById('note').value.trim();
+    entries.push({id:Date.now(),start:s,end:e,name:n,category:c,focus:f,notes:nt,duration:60});
+    document.getElementById('startTime').value=e;
+    document.getElementById('endTime').value=m2t(t2m(e)+60);
+    document.getElementById('actName').value='';
+    toast('Quick add (60m)','success');
+    refresh();
+}
+
+function del(id) { entries=entries.filter(a=>a.id!==id); refresh(); toast('Deleted','info'); }
+
+function doSort(by) {
+    if(by==='time') entries.sort((a,b)=>t2m(a.start)-t2m(b.start));
+    else entries.sort((a,b)=>b.focus-a.focus);
+    renderTable();
+}
+
+function refresh() { renderTable(); updateStats(); runAnalysis(); save(); }
+
+function renderTable() {
+    const tb=document.getElementById('tbody');
+    document.getElementById('entryCount').textContent=entries.length+' entries';
+    if(!entries.length) { tb.innerHTML='<tr><td colspan="7" class="px-4 py-12 text-center text-gray-600"><div class="text-3xl mb-2">📝</div><p>No activities logged</p></td></tr>'; return; }
+    tb.innerHTML=entries.map((a,i)=>{
+        const cls='cat-'+a.category;
+        const fc=a.focus>=4?'fh':a.focus>=3?'fm':'fl';
+        const h=Math.floor(a.duration/60), m=a.duration%60;
+        const dur=h>0?h+'h '+m+'m':m+'m';
+        const flags=[];
+        if(a.category==='Waste') flags.push('<span class="text-[10px] text-red-500 bg-red-500/10 px-1.5 py-0.5 rounded ml-1">WASTE</span>');
+        if(a.focus<=2&&a.category==='Work') flags.push('<span class="text-[10px] text-yellow-500 bg-yellow-500/10 px-1.5 py-0.5 rounded ml-1">LOW FOCUS</span>');
+        return `<tr class="hover:bg-gray-800/30 transition-colors border-b border-gray-800/40 af" style="animation-delay:${i*0.04}s">
+            <td class="px-4 py-3 text-gray-300 font-mono text-xs">${a.start} → ${a.end}</td>
+            <td class="px-4 py-3 text-white font-semibold text-sm">${a.name} ${flags.join('')}</td>
+            <td class="px-4 py-3"><span class="category-badge ${cls}">${a.category}</span></td>
+            <td class="px-4 py-3"><div class="flex items-center gap-0.5">${[1,2,3,4,5].map(n=>`<span class="focus-dot ${n<=a.focus?fc:'bg-gray-700'}"></span>`).join('')}<span class="text-[10px] text-gray-500 ml-1">${a.focus}/5</span></div></td>
+            <td class="px-4 py-3 text-gray-400 text-xs">${dur}</td>
+            <td class="px-4 py-3 text-gray-500 text-xs max-w-[120px] truncate">${a.notes||'-'}</td>
+            <td class="px-4 py-3 text-center"><button onclick="del(${a.id})" class="text-gray-600 hover:text-red-400 transition">🗑️</button></td>
+        </tr>`;
+    }).join('');
+}
+
+function updateStats() {
+    const sec=document.getElementById('statsSec');
+    if(!entries.length) { sec.classList.add('hidden'); return; }
+    sec.classList.remove('hidden');
+    const total=entries.reduce((s,a)=>s+a.duration,0);
+    const work=entries.filter(a=>a.category==='Work').reduce((s,a)=>s+a.duration,0);
+    const waste=entries.filter(a=>a.category==='Waste').reduce((s,a)=>s+a.duration,0);
+    const dev=entries.filter(a=>a.category==='Development').reduce((s,a)=>s+a.duration,0);
+    const af=entries.reduce((s,a)=>s+a.focus,0)/entries.length;
+    const hf={};
+    entries.forEach(a=>{
+        const sh=Math.floor(t2m(a.start)/60), eh=Math.ceil(t2m(a.end)/60);
+        for(let h=sh;h<eh&&h<24&&h>=0;h++){
+            if(!hf[h]) hf[h]={s:0,c:0};
+            hf[h].s+=a.focus; hf[h].c++;
+        }
+    });
+    let pk='--',ps=0;
+    Object.keys(hf).forEach(h=>{ const avg=hf[h].s/hf[h].c; if(avg>ps){ps=avg; pk=String(h).padStart(2,'0')+':00'; }});
+    document.getElementById('sTotal').textContent=(total/60).toFixed(1)+'h';
+    document.getElementById('sProd').textContent=((work+dev)/60).toFixed(1)+'h';
+    document.getElementById('sWaste').textContent=(waste/60).toFixed(1)+'h';
+    document.getElementById('sFocus').textContent=af.toFixed(1);
+    document.getElementById('sPeak').textContent=pk;
+}
+
+function runAnalysis() {
+    if(!entries.length) return;
+    const total=entries.reduce((s,a)=>s+a.duration,0);
+    const work=entries.filter(a=>a.category==='Work').reduce((s,a)=>s+a.duration,0);
+    const waste=entries.filter(a=>a.category==='Waste').reduce((s,a)=>s+a.duration,0);
+    const dev=entries.filter(a=>a.category==='Development').reduce((s,a)=>s+a.duration,0);
+    const af=entries.reduce((s,a)=>s+a.focus,0)/entries.length;
+    const wr=waste/total, wkr=work/total, dr=dev/total;
+    const sc=Math.min(100,Math.round(wkr*35+(af/5)*30+dr*20+(1-wr)*15));
+    const oS=document.getElementById('oScore');
+    oS.textContent=sc+'/100';
+    oS.className=`text-5xl font-black mb-2 ${sc>=70?'text-green-400':sc>=50?'text-yellow-400':'text-red-500'}`;
+    document.getElementById('sLabel').innerHTML=sc>=80?'<span class="text-green-400">Highly productive</span>':sc>=60?'<span class="text-yellow-400">Moderate — needs improvement</span>':sc>=40?'<span class="text-red-400">Poor — serious issues</span>':'<span class="text-red-500 font-bold pulse-red">Critical — immediate review</span>';
+    const bar=document.getElementById('sBar'); bar.style.width=sc+'%'; bar.className=`progress-fill ${sc>=70?'bg-green-500':sc>=50?'bg-yellow-500':'bg-red-500'}`;
+
+    // Breakdown
+    const cats=[{n:'Work',m:work,c:'bg-green-500'},{n:'Development',m:dev,c:'bg-yellow-500'},{n:'Personal',m:entries.filter(a=>a.category==='Personal').reduce((s,a)=>s+a.duration,0),c:'bg-purple-500'},{n:'Rest',m:entries.filter(a=>a.category==='Rest').reduce((s,a)=>s+a.duration,0),c:'bg-blue-500'},{n:'Waste',m:waste,c:'bg-red-500'}].filter(x=>x.m>0);
+    document.getElementById('catBreak').innerHTML=cats.map(c=>{const p=((c.m/total)*100).toFixed(0);return`<div class="flex items-center gap-3"><span class="text-sm text-gray-300 w-24">${c.n}</span><div class="flex-1 progress-bar"><div class="progress-fill ${c.c}" style="width:${p}%"></div></div><span class="text-xs text-gray-500 w-16 text-right">${(c.m/60).toFixed(1)}h</span><span class="text-xs text-gray-500 w-10 text-right">${p}%</span></div>`;}).join('');
+
+    // Waste
+    const wActs=entries.filter(a=>a.category==='Waste');
+    const lfW=entries.filter(a=>a.focus<=2&&a.category==='Work');
+    let wh='';
+    if(wActs.length) {
+        wh+=`<div class="mb-3 p-3 bg-red-500/10 rounded-lg border border-red-500/20"><p class="text-red-300 font-bold text-sm">Total wasted: ${waste}m (${((wr)*100).toFixed(0)}%)</p></div>`;
+        wActs.forEach(a=>{wh+=`<div class="alert-box border-red-500 bg-red-500/5 rounded-lg p-3 mb-2"><div class="flex justify-between"><span class="font-bold text-red-300 text-sm">${a.name}</span><span class="text-xs text-red-400">${a.duration}m</span></div></div>`;});
+    } else wh+='<p class="text-green-400 text-sm">No waste detected</p>';
+    if(lfW.length) {
+        wh+=`<div class="mt-3"><h4 class="text-sm font-bold text-yellow-400 mb-2">Low focus work:</h4>`;
+        lfW.forEach(a=>{wh+=`<div class="alert-box border-yellow-500 bg-yellow-500/5 rounded-lg p-2 mb-2"><span class="text-sm text-yellow-300">${a.name}</span><span class="text-xs text-yellow-400 ml-2">(${a.duration}m — Focus: ${a.focus}/5)</span></div>`;});
+        wh+='</div>';
+    }
+    document.getElementById('wasteDet').innerHTML=wh;
+
+    // Focus
+    const hi=entries.filter(a=>a.focus>=4),mi=entries.filter(a=>a.focus===3),lo=entries.filter(a=>a.focus<=2);
+    document.getElementById('focusDet').innerHTML=`<div class="grid grid-cols-3 gap-3 mb-4"><div class="bg-green-500/10 rounded-lg p-3 text-center border border-green-500/20"><div class="text-2xl font-bold text-green-400">${hi.length}</div><div class="text-[10px] text-green-300">High (4-5)</div></div><div class="bg-yellow-500/10 rounded-lg p-3 text-center border border-yellow-500/20"><div class="text-2xl font-bold text-yellow-400">${mi.length}</div><div class="text-[10px] text-yellow-300">Mid (3)</div></div><div class="bg-red-500/10 rounded-lg p-3 text-center border border-red-500/20"><div class="text-2xl font-bold text-red-400">${lo.length}</div><div class="text-[10px] text-red-300">Low (1-2)</div></div></div><p class="text-sm text-gray-300">Average: <span class="font-bold ${af>=3?'text-green-400':'text-red-400'}">${af.toFixed(1)}</span>/5</p>${lo.length?'<p class="text-xs text-red-400 mt-2">'+lo.length+' entries with low focus</p>':''}`;
+
+    // Peak
+    const hd={};
+    entries.forEach(a=>{const h=Math.floor(t2m(a.start)/60);if(h>=0&&h<24){if(!hd[h])hd[h]={s:0,c:0,ws:0};hd[h].s+=a.focus;hd[h].c++;if(a.category==='Work'||a.category==='Development')hd[h].ws+=a.focus;}});
+    let bh=null,bs=0;
+    Object.keys(hd).forEach(h=>{const avg=hd[h].ws/Math.max(hd[h].c,1);if(avg>bs){bs=avg;bh=h;}});
+    document.getElementById('peakDet').innerHTML=bh!==null?`<div class="flex items-center gap-4"><div class="text-3xl font-bold text-green-400">${String(bh).padStart(2,'0')}:00</div><div><p class="text-sm text-gray-300">Peak performance window</p><p class="text-xs text-gray-500">Avg focus: ${bs.toFixed(1)}/5</p></div></div>`:'<p class="text-gray-500">Not enough data</p>';
+
+    renderCharts();
+    genFeedback();
+}
+
+function renderCharts() {
+    Object.values(charts).forEach(c=>{if(c&&c.destroy)c.destroy();});
+    const total=entries.reduce((s,a)=>s+a.duration,0);
+    const cats=['Work','Personal','Rest','Development','Waste'];
+    const cd=cats.map(c=>entries.filter(a=>a.category===c).reduce((s,a)=>s+a.duration,0));
+    const c1=document.getElementById('catChart').getContext('2d');
+    charts.cat=new Chart(c1,{type:'doughnut',data:{labels:cats,datasets:[{data:cd,backgroundColor:['rgba(34,197,94,0.6)','rgba(139,92,246,0.6)','rgba(59,130,246,0.6)','rgba(234,179,8,0.6)','rgba(239,68,68,0.6)'],borderWidth:1}]},options:{responsive:true,plugins:{legend:{labels:{color:'#9ca3af',font:{family:'Inter'}}}}}});
+
+    const sorted=[...entries].sort((a,b)=>t2m(a.start)-t2m(b.start));
+    const c2=document.getElementById('focusLine').getContext('2d');
+    charts.fl=new Chart(c2,{type:'line',{labels:sorted.map(a=>a.start),datasets:[{label:'Focus',data:sorted.map(a=>a.focus),borderColor:'#6366f1',backgroundColor:'rgba(99,102,241,0.1)',tension:0.3,pointRadius:5,pointBackgroundColor:sorted.map(a=>a.category==='Waste'?'#ef4444':a.focus>=4?'#22c55e':a.focus>=3?'#eab308':'#f97316'),fill:true}]},options:{responsive:true,scales:{y:{beginAtZero:true,max:5,ticks:{color:'#9ca3af',stepSize:1},grid:{color:'rgba(107,114,128,0.1)'}},x:{ticks:{color:'#9ca3af',font:{family:'Inter',size:9}},grid:{display:false}}},plugins:{legend:{labels:{color:'#9ca3af',font:{family:'Inter'}}}}}});
+}
+
+function genFeedback() {
+    const total=entries.reduce((s,a)=>s+a.duration,0);
+    const waste=entries.filter(a=>a.category==='Waste').reduce((s,a)=>s+a.duration,0);
+    const work=entries.filter(a=>a.category==='Work').reduce((s,a)=>s+a.duration,0);
+    const dev=entries.filter(a=>a.category==='Development').reduce((s,a)=>s+a.duration,0);
+    const af=entries.reduce((s,a)=>s+a.focus,0)/entries.length;
+    const wr=waste/total, wkr=work/total;
+    const lfW=entries.filter(a=>a.focus<=2&&a.category==='Work');
+    const probs=[];
+    if(wr>0.15) probs.push({t:'Excessive time waste — over 15% of your day is lost',d:`${waste}m (${((wr)*100).toFixed(0)}%) spent on non-productive activities. Time is the only resource you cannot recover.`,s:'high',i:''});
+    if(wr>0.05&&!probs.find(p=>p.t.includes('waste'))) probs.push({t:'Noticeable time waste',d:`${waste}m (${((wr)*100).toFixed(0)}%) wasted. Even small waste compounds.`,s:'medium',i:'🟡'});
+    if(lfW.length) { const lm=lfW.reduce((s,a)=>s+a.duration,0); probs.push({t:`Low focus during work — ${lm}m of compromised output`,d:`${lfW.length} work entries with focus ≤2. Low focus equals wasted time.`,s:'high',i:''}); }
+    if(dev<30&&total>180) probs.push({t:'Near-zero development time',d:`Only ${dev}m for growth out of ${total}m. No development means stagnation.`,s:'medium',i:'🟡'});
+    if(wkr<0.4&&total>240) probs.push({t:'Work ratio below 40%',d:`Only ${((wkr)*100).toFixed(0)}% is actual work.`,s:'high',i:''});
+    const nn=entries.filter(a=>!a.notes).length;
+    if(probs.length<3) probs.push({t:'Insufficient documentation',d:`${nn}/${entries.length} entries lack notes.`,s:'low',i:'⚪'});
+    if(probs.length<3) probs.push({t:'Unbalanced schedule',d:'Lack of structure destroys momentum.',s:'low',i:'⚪'});
+    const sc={high:'border-red-500 bg-red-500/5 text-red-300',medium:'border-yellow-500 bg-yellow-500/5 text-yellow-300',low:'border-gray-500 bg-gray-500/5 text-gray-300'};
+    document.getElementById('probList').innerHTML=probs.slice(0,3).map((p,i)=>`<div class="alert-box ${sc[p.s]} rounded-lg af" style="animation-delay:${i*0.1}s"><div class="flex gap-3"><span class="text-xl">${p.i}</span><div><h4 class="font-bold text-sm mb-1">${p.t}</h4><p class="text-xs text-gray-400 leading-relaxed">${p.d}</p></div></div></div>`).join('');
+
+    const fixes=[];
+    if(wr>0.1) fixes.push({t:'Implement strict time blocking',d:'Divide your day into defined blocks. One task per block. Use 90-minute deep work sessions.',a:'Plan 3 blocks tomorrow: Work, Development, Rest',i:'⏰'});
+    else fixes.push({t:'Optimize transition periods',d:'Use gaps between activities for quick productive tasks.',a:'Prepare a "10-minute tasks" list',i:'⏰'});
+    if(af<3) fixes.push({t:'Eliminate distractions during work',d:`Avg focus is ${af.toFixed(1)}/5. Turn off notifications.`,a:'Enable Do Not Disturb during all work sessions',i:'🎯'});
+    else fixes.push({t:'Protect peak focus window',d:`Focus is decent at ${af.toFixed(1)}/5. Guard your best hour.`,a:'Schedule hardest task during peak hour',i:'🎯'});
+    fixes.push({t:'Commit to 60 minutes of daily development',d:dev>0?`Currently ${dev}m. Increase to 60 minimum.`:'Zero development. Allocate 60 minutes daily.',a:'Pick one skill to improve this week',i:'📚'});
+    document.getElementById('fixList').innerHTML=fixes.map((f,i)=>`<div class="alert-box border-green-500 bg-green-500/5 rounded-lg af" style="animation-delay:${i*0.1}s"><div class="flex gap-3"><span class="text-xl">${f.i}</span><div><h4 class="font-bold text-sm text-green-300 mb-1">${f.t}</h4><p class="text-xs text-gray-400 mb-2">${f.d}</p><div class="bg-green-500/10 border border-green-500/20 rounded px-3 py-2"><span class="text-xs text-green-400 font-bold">Action:</span><span class="text-xs text-green-300 ml-1">${f.a}</span></div></div></div></div>`).join('');
+
+    const sc2=Math.min(100,Math.round(wkr*35+(af/5)*30+(dev/total)*20+(1-wr)*15));
+    let v='';
+    if(sc2>=80) v=`<p class="mb-2"><strong class="text-green-400">Solid day — don't get complacent.</strong></p><p class="text-gray-400 mb-2">Score: ${sc2}/100. Keep optimizing the weak spots.</p><p class="text-red-400 font-bold text-xs mt-3">Tomorrow is a chance to improve.</p>`;
+    else if(sc2>=50) v=`<p class="mb-2"><strong class="text-yellow-400">Mediocre — requires urgent correction.</strong></p><p class="text-gray-400 mb-2">Score: ${sc2}/100. You're consuming time without sufficient return.</p><ul class="text-gray-400 text-xs space-y-1 mt-2 list-disc list-inside">${wr>0.1?`<li>${((wr)*100).toFixed(0)}% wasted.</li>`:''}${af<3?`<li>Avg focus ${af.toFixed(1)}/5.</li>`:''}${wkr<0.5?`<li>Less than 50% productive.</li>`:''}</ul><p class="text-red-500 font-bold text-xs mt-3">No excuses. Change habits now.</p>`;
+    else v=`<p class="mb-2"><strong class="text-red-500 pulse-red">Critical — immediate review required.</strong></p><p class="text-gray-400 mb-2">Score: ${sc2}/100. You spent your day without direction.</p><ul class="text-gray-400 text-xs space-y-1 mt-2 list-disc list-inside"><li>Wasted: ${waste}m</li><li>Work ratio: ${((wkr)*100).toFixed(0)}%</li><li>Focus: ${af.toFixed(1)}/5</li></ul><p class="text-red-500 font-bold text-sm mt-3">⚠️ Do not ignore these results. No excuses. Only results.</p>`;
+    document.getElementById('verdict').innerHTML=v;
+}
+
+function switchTab(t) {
+    ['table','analysis','feedback'].forEach(k=>{
+        document.getElementById('content-'+k).classList.toggle('hidden',k!==t);
+        document.getElementById('tab-'+k).className=k===t?'tab-btn active':'tab-btn';
+    });
+}
+
+function loadSample() {
+    entries=[
+        {id:1,start:'06:00',end:'06:30',name:'Wake up & prep',category:'Personal',focus:2,notes:'Slow morning',duration:30},
+        {id:2,start:'06:30',end:'07:30',name:'Breakfast & news',category:'Waste',focus:1,notes:'Scrolled Twitter 25m',duration:60},
+        {id:3,start:'07:30',end:'09:00',name:'Email & calls',category:'Work',focus:3,notes:'Replied to 12 emails',duration:90},
+        {id:4,start:'09:00',end:'10:00',name:'Team meeting',category:'Work',focus:2,notes:'No clear agenda',duration:60},
+        {id:5,start:'10:00',end:'10:30',name:'Coffee & social media',category:'Waste',focus:1,notes:'Lost in reels',duration:30},
+        {id:6,start:'10:30',end:'12:30',name:'Core project work',category:'Work',focus:4,notes:'Deep work',duration:120},
+        {id:7,start:'12:30',end:'13:30',name:'Lunch break',category:'Rest',focus:2,notes:'Long lunch',duration:60},
+        {id:8,start:'13:30',end:'14:00',name:'Read technical book',category:'Development',focus:4,notes:'Deep Work chapter',duration:30},
+        {id:9,start:'14:00',end:'15:00',name:'Code review',category:'Work',focus:3,notes:'PR reviews',duration:60},
+        {id:10,start:'15:00',end:'15:30',name:'YouTube browsing',category:'Waste',focus:1,notes:'Random videos',duration:30},
+        {id:11,start:'15:30',end:'17:00',name:'Weekly report',category:'Work',focus:2,notes:'Started late',duration:90},
+        {id:12,start:'17:00',end:'17:30',name:'Personal calls',category:'Personal',focus:3,notes:'Family call',duration:30}
+    ];
+    refresh(); toast('Demo data loaded','success');
+}
+
+function clearAll() {
+    if(!entries.length)return;
+    if(confirm('Clear all data?')){entries=[];refresh();toast('Cleared','info');}
+}
+
+function save(){localStorage.setItem('at_data',JSON.stringify(entries));}
+function load(){try{const s=localStorage.getItem('at_data');if(s)entries=JSON.parse(s);}catch(e){}refresh();}
+
+function toast(msg,type='info'){
+    document.querySelector('.toast')?.remove();
+    const cols={success:'bg-green-500/20 border-green-500/50 text-green-300',error:'bg-red-500/20 border-red-500/50 text-red-300',info:'bg-blue-500/20 border-blue-500/50 text-blue-300'};
+    const t=document.createElement('div');
+    t.className=`toast ${cols[type]} border rounded-lg`;
+    t.textContent=msg;
+    document.body.appendChild(t);
+    setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity 0.3s';setTimeout(()=>t.remove(),300);},2500);
+}
+
+document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter')addEntry();});
+load();
+</script>
+</body>
+</html>
+
