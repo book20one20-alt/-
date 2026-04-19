@@ -1,0 +1,6 @@
+📁 productivity-tracker/
+ ├── tracker.py                # 🔥 الكود الرئيسي
+ ├── productivity_data.json    # 💾 البيانات (يُنشأ تلقائياً)
+ ├── README.md                 # 📖 التوثيق (اختياري)
+ ├── .gitignore                # 🚫 استثناءات Git (اختياري)
+ └── run.bat / run.sh          # ▶️ تشغيل سريع (اختياري)
