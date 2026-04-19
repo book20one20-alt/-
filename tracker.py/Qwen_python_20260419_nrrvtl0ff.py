@@ -1,0 +1,236 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+مُتتبع الإنتاجية الصارم - نسخة Python
+تحليل بيانات يومي صارم، كشف هدر الوقت، وتوليد تقارير قابلة للتطبيق فوراً.
+لا يعتمد على مكتبات خارجية. يعمل على Python 3.6+
+"""
+import json
+import os
+import sys
+
+class Colors:
+    GREEN = '\033[92m'
+    RED = '\033[91m'
+    YELLOW = '\033[93m'
+    BLUE = '\033[94m'
+    RESET = '\033[0m'
+    BOLD = '\033[1m'
+    BG_DARK = '\033[40m'
+
+class ProductivityTracker:
+    def __init__(self, data_file="productivity_data.json"):
+        self.data_file = data_file
+        self.entries = []
+        self.load_data()
+
+    def time_to_min(self, t):
+        h, m = map(int, t.split(":"))
+        return h * 60 + m
+
+    def min_to_time(self, m):
+        return f"{m // 60:02d}:{m % 60:02d}"
+
+    def calc_dur(self, start, end):
+        d = self.time_to_min(end) - self.time_to_min(start)
+        return d + 1440 if d < 0 else d
+
+    def add_entry(self):
+        print(f"\n{Colors.BOLD}--- تسجيل نشاط جديد ---{Colors.RESET}")
+        start = input("وقت البدء (HH:MM) [08:00]: ").strip() or "08:00"
+        end = input("وقت الانتهاء (HH:MM) [09:00]: ").strip() or "09:00"
+        name = input("اسم النشاط: ").strip()
+        if not name: print(f"{Colors.RED}⚠️ اسم النشاط مطلوب.{Colors.RESET}"); return
+
+        print("التصنيفات: Work, Personal, Rest, Development, Waste")
+        cat = input("التصنيف [Work]: ").strip() or "Work"
+        
+        try:
+            focus = int(input("مستوى التركيز (1-5) [3]: ").strip() or "3")
+            if not (1 <= focus <= 5): raise ValueError
+        except ValueError:
+            print(f"{Colors.RED}⚠️ التركيز يجب أن يكون رقماً بين 1 و 5.{Colors.RESET}")
+            return
+
+        notes = input("ملاحظات (اختياري): ").strip()
+        duration = self.calc_dur(start, end)
+        if duration <= 0:
+            print(f"{Colors.RED}⚠️ وقت الانتهاء يجب أن يكون بعد البدء.{Colors.RESET}")
+            return
+
+        self.entries.append({
+            "id": len(self.entries) + 1, "start": start, "end": end,
+            "name": name, "category": cat, "focus": focus, "notes": notes, "duration": duration
+        })
+        self.save_data()
+        print(f"{Colors.GREEN}✅ تمت الإضافة بنجاح. ({duration} دقيقة){Colors.RESET}")
+
+    def quick_add(self):
+        print(f"\n{Colors.BOLD}--- إضافة سريعة (60 دقيقة) ---{Colors.RESET}")
+        last_end = self.entries[-1]["end"] if self.entries else "08:00"
+        start = input(f"وقت البدء [{last_end}]: ").strip() or last_end
+        end_minutes = self.time_to_min(start) + 60
+        end = self.min_to_time(end_minutes)
+        name = input("النشاط: ").strip() or "نشاط سريع"
+        cat = input("التصنيف [Work]: ").strip() or "Work"
+        try:
+            focus = int(input("التركيز (1-5) [3]: ").strip() or "3")
+            if not (1 <= focus <= 5): focus = 3
+        except: focus = 3
+        
+        self.entries.append({"id": len(self.entries)+1, "start": start, "end": end,
+                             "name": name, "category": cat, "focus": focus, "notes": "", "duration": 60})
+        self.save_data()
+        print(f"{Colors.GREEN}✅ تمت الإضافة السريعة (08:00 → 09:00 نمط).{Colors.RESET}")
+
+    def show_table(self):
+        if not self.entries:
+            print(f"{Colors.YELLOW}📭 لا توجد نشاطات مسجلة.{Colors.RESET}")
+            return
+        print(f"\n{Colors.BOLD}📋 جدول النشاطات{Colors.RESET}")
+        print(f"{'الوقت':<12} {'النشاط':<22} {'التصنيف':<12} {'التركيز':<8} {'المدة':<8} {'ملاحظات'}")
+        print("-" * 75)
+        for e in self.entries:
+            h, m = divmod(e['duration'], 60)
+            dur = f"{h}س {m}د" if h > 0 else f"{m}د"
+            flag = ""
+            if e['category'] == 'Waste': flag += f"{Colors.RED}[WASTE]{Colors.RESET} "
+            if e['focus'] <= 2 and e['category'] == 'Work': flag += f"{Colors.YELLOW}[LOW FOCUS]{Colors.RESET}"
+            print(f"{e['start']}-{e['end']:<7} {e['name']:<22} {e['category']:<12} {e['focus']}/5      {dur:<8} {flag} {e['notes']}")
+        print()
+
+    def analyze(self):
+        if not self.entries:
+            print(f"{Colors.RED}⚠️ لا توجد بيانات للتحليل. أضف نشاطات أولاً.{Colors.RESET}")
+            return
+
+        total = sum(e['duration'] for e in self.entries)
+        work = sum(e['duration'] for e in self.entries if e['category'] == 'Work')
+        waste = sum(e['duration'] for e in self.entries if e['category'] == 'Waste')
+        dev = sum(e['duration'] for e in self.entries if e['category'] == 'Development')
+        avg_focus = sum(e['focus'] for e in self.entries) / len(self.entries)
+
+        wr = waste / total
+        wkr = work / total
+        dr = dev / total
+
+        # حساب النتيجة بنفس معادلة الواجهة
+        score = min(100, round(wkr * 35 + (avg_focus / 5) * 30 + dr * 20 + (1 - wr) * 15))
+
+        # استخراج المشاكل
+        problems = []
+        lf_work = [e for e in self.entries if e['focus'] <= 2 and e['category'] == 'Work']
+        
+        if wr > 0.15:
+            problems.append(f"{Colors.RED}🔴 هدر وقت مفرط:{Colors.RESET} {waste} دقيقة ({round(wr*100)}%) ضاعت بلا عائد.")
+        if lf_work:
+            lf_min = sum(e['duration'] for e in lf_work)
+            problems.append(f"{Colors.RED}🔴 تركيز منخفض أثناء العمل:{Colors.RESET} {lf_min} دقيقة بتركيز ≤2/5. العمل بدون تركيز = إهدار فعلي.")
+        if dev < 30 and total > 180:
+            problems.append(f"{Colors.YELLOW}🟡 إهمال التطوير:{Colors.RESET} {dev} دقيقة فقط من أصل {total}. التوقف عن التطوير = تراجع مهني.")
+        if wkr < 0.4 and total > 240:
+            problems.append(f"{Colors.RED}🔴 نسبة العمل منخفضة:{Colors.RESET} أقل من 40% من وقتك مُوجه للعمل الفعلي.")
+        if len(problems) < 3:
+            problems.append(f"{Colors.BLUE}⚪ نقص التوثيق أو عدم التوازن:{Colors.RESET} بعض النشاطات تفتقر للملاحظات أو الهيكل الزمني.")
+
+        # استخراج الحلول
+        fixes = []
+        if wr > 0.1:
+            fixes.append("طبق الـ Time Blocking: قسم يومك لكتل ثابتة. 90 دقيقة عمل عميق + 15 راحة. لا تبديل مهام.")
+        else:
+            fixes.append("استغل الفجوات الزمنية: جهز قائمة 'مهام 10 دقائق' للفترات الميتة بين النشاطات.")
+            
+        if avg_focus < 3:
+            fixes.append(f"أزل المشتتات جذرياً: تركيزك {avg_focus:.1f}/5. أغلق الإشعارات، هاتف على الصامت، وضع Do Not Disturb.")
+        else:
+            fixes.append(f"احمِ نافذة التركيز القصوى: حدد ساعتك الذهبية وضع فيها أصعب مهمة فقط.")
+            
+        fixes.append("التزم بـ 60 دقيقة تطوير يومي: مهارة واحدة هذا الأسبوع. الكورس، الكتاب، أو التطبيق العملي.")
+
+        # الحكم الصارم
+        if score >= 80:
+            verdict = f"{Colors.GREEN}🟢 يوم جيد ({score}/100).{Colors.RESET} أنت في المسار، لكن 20% المتبقية فرص ضائعة. لا تسمح للرضا بالظهور."
+        elif score >= 50:
+            verdict = f"{Colors.YELLOW}🟡 يوم متوسط ({score}/100).{Colors.RESET} الأرقام واضحة. تستهلك وقتاً بدون عائد كافٍ. غيّر العادات الآن."
+        else:
+            verdict = f"{Colors.RED}🚨 يوم كارثي ({score}/100).{Colors.RESET} الوقت الضائع لن يعود. لا أعذار، لا مبررات. غدًا يجب أن يكون مختلفاً."
+
+        # عرض التقرير
+        print(f"\n{Colors.BG_DARK}{Colors.BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{Colors.RESET}")
+        print(f"{Colors.BOLD}📊 تقرير الإنتاجية اليامي{Colors.RESET}")
+        print(f"إجمالي الساعات: {(total/60):.1f} | العمل الفعلي: {(work/60):.1f}س | الهدر: {(waste/60):.1f}س | متوسط التركيز: {avg_focus:.1f}/5")
+        print(f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
+        
+        print(f"{Colors.BOLD}🎯 التقييم: {score}/100{Colors.RESET}")
+        print(f"{Colors.BOLD}🔍 المشاكل الثلاثة:{Colors.RESET}")
+        for i, p in enumerate(problems[:3], 1): print(f"  {i}. {p}")
+        
+        print(f"\n{Colors.BOLD}✅ التعديلات الفورية:{Colors.RESET}")
+        for i, f in enumerate(fixes[:3], 1): print(f"  {i}. {f}")
+        
+        print(f"\n{Colors.BOLD}⚖️ الحكم الصارم:{Colors.RESET}")
+        print(f"  {verdict}")
+        print(f"{Colors.BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{Colors.RESET}\n")
+
+    def load_sample(self):
+        self.entries = [
+            {"id":1,"start":"06:00","end":"06:30","name":"استيقاظ وتحضير","category":"Personal","focus":2,"notes":"بطيء","duration":30},
+            {"id":2,"start":"06:30","end":"07:30","name":"فطور وتصفح أخبار","category":"Waste","focus":1,"notes":"تويتر 25د","duration":60},
+            {"id":3,"start":"07:30","end":"09:00","name":"بريد ومكالمات","category":"Work","focus":3,"notes":"12 رد","duration":90},
+            {"id":4,"start":"09:00","end":"10:00","name":"اجتماع فريقي","category":"Work","focus":2,"notes":"بدون أجندة","duration":60},
+            {"id":5,"start":"10:00","end":"10:30","name":"قهوة وسوشيال ميديا","category":"Waste","focus":1,"notes":"ريلز","duration":30},
+            {"id":6,"start":"10:30","end":"12:30","name":"مشروع رئيسي","category":"Work","focus":4,"notes":"عمل عميق","duration":120},
+            {"id":7,"start":"12:30","end":"13:30","name":"غداء","category":"Rest","focus":2,"notes":"طويل","duration":60},
+            {"id":8,"start":"13:30","end":"14:00","name":"قراءة كتاب تقني","category":"Development","focus":4,"notes":"Deep Work","duration":30},
+            {"id":9,"start":"14:00","end":"15:00","name":"مراجعة كود","category":"Work","focus":3,"notes":"PRs","duration":60},
+            {"id":10,"start":"15:00","end":"15:30","name":"يوتيوب عشوائي","category":"Waste","focus":1,"notes":"فيديوهات","duration":30},
+            {"id":11,"start":"15:30","end":"17:00","name":"تقرير أسبوعي","category":"Work","focus":2,"notes":"تأخرت","duration":90},
+            {"id":12,"start":"17:00","end":"17:30","name":"مكالمات شخصية","category":"Personal","focus":3,"notes":"عائلة","duration":30}
+        ]
+        self.save_data()
+        print(f"{Colors.GREEN}✅ تم تحميل البيانات التجريبية (12 نشاط).{Colors.RESET}")
+
+    def clear_data(self):
+        if self.entries and input("⚠️ هل أنت متأكد من مسح جميع البيانات؟ (y/n): ").strip().lower() == 'y':
+            self.entries = []
+            self.save_data()
+            print(f"{Colors.GREEN}✅ تم مسح البيانات.{Colors.RESET}")
+
+    def save_data(self):
+        with open(self.data_file, 'w', encoding='utf-8') as f:
+            json.dump(self.entries, f, ensure_ascii=False, indent=2)
+
+    def load_data(self):
+        if os.path.exists(self.data_file):
+            try:
+                with open(self.data_file, 'r', encoding='utf-8') as f:
+                    self.entries = json.load(f)
+            except: self.entries = []
+
+    def run(self):
+        while True:
+            print(f"\n{Colors.BOLD}╔══════════════════════════════════════════╗{Colors.RESET}")
+            print(f"{Colors.BOLD}║   مُتتبع الإنتاجية الصارم - Python CLI   ║{Colors.RESET}")
+            print(f"╚══════════════════════════════════════════╝")
+            print(f"1. إضافة نشاط جديد")
+            print(f"2. إضافة سريعة (60 دقيقة)")
+            print(f"3. عرض الجدول")
+            print(f"4. تحليل اليوم (التقرير الصارم)")
+            print(f"5. تحميل بيانات تجريبية")
+            print(f"6. مسح البيانات")
+            print(f"0. خروج\n")
+            choice = input("اختر رقم الخيار: ").strip()
+            
+            if choice == '1': self.add_entry()
+            elif choice == '2': self.quick_add()
+            elif choice == '3': self.show_table()
+            elif choice == '4': self.analyze()
+            elif choice == '5': self.load_sample()
+            elif choice == '6': self.clear_data()
+            elif choice == '0': print(f"{Colors.GREEN}👋 وداعاً. العمل الجاد يصنع النتائج.{Colors.RESET}"); break
+            else: print(f"{Colors.RED}❌ خيار غير صالح.{Colors.RESET}")
+            input("\nاضغط Enter للمتابعة...")
+
+if __name__ == "__main__":
+    tracker = ProductivityTracker()
+    tracker.run()
