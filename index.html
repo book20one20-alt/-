@@ -4,385 +4,934 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Activity Tracker & Productivity Analyzer</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.18/index.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
-        :root {
-            --bg-primary: #0f1117;
-            --bg-card: #1c1f2e;
-            --border: #2d3148;
-            --accent: #6366f1;
+        *, *::before, *::after { box-sizing: border-box; }
+        body {
+            margin: 0; padding: 0;
+            background: #0f1117;
+            color: #e2e4f0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
         }
-        * { font-family: 'Inter', system-ui, sans-serif; box-sizing: border-box; }
-        body { background: var(--bg-primary); color: #e2e4f0; min-height: 100vh; margin: 0; }
-        .glass { background: var(--bg-card); border: 1px solid var(--border); backdrop-filter: blur(12px); }
-        .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; }
-        .input-dark { background: rgba(22,24,34,0.8); border: 1px solid var(--border); color: #e2e4f0; transition: all 0.2s; }
-        .input-dark:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
-        .btn-primary { background: linear-gradient(135deg, #6366f1, #4f46e5); color: white; font-weight: 600; transition: all 0.2s; }
-        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(99,102,241,0.25); }
-        .category-badge { font-size: 0.7rem; padding: 3px 10px; border-radius: 999px; font-weight: 600; }
-        .cat-Work { background: rgba(34,197,94,0.15); color: #22c55e; border: 1px solid rgba(34,197,94,0.3); }
-        .cat-Personal { background: rgba(139,92,246,0.15); color: #8b5cf6; border: 1px solid rgba(139,92,246,0.3); }
-        .cat-Rest { background: rgba(59,130,246,0.15); color: #3b82f6; border: 1px solid rgba(59,130,246,0.3); }
-        .cat-Development { background: rgba(234,179,8,0.15); color: #eab308; border: 1px solid rgba(234,179,8,0.3); }
-        .cat-Waste { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
-        .focus-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+        a { color: inherit; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
+
+        /* Header */
+        .header {
+            position: sticky; top: 0; z-index: 50;
+            background: #1c1f2e;
+            border-bottom: 1px solid #2d3148;
+            backdrop-filter: blur(12px);
+        }
+        .header-inner {
+            display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: 12px;
+            padding: 14px 16px;
+            max-width: 1200px; margin: 0 auto;
+        }
+        .logo-area { display: flex; align-items: center; gap: 12px; }
+        .logo {
+            width: 40px; height: 40px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-weight: bold; font-size: 16px;
+        }
+        .logo-text h1 { font-size: 16px; margin: 0; color: #fff; font-weight: 700; }
+        .logo-text p { font-size: 11px; margin: 0; color: #6b7280; }
+        .header-actions { display: flex; gap: 8px; align-items: center; }
+        .btn-sm {
+            padding: 6px 12px; border-radius: 8px;
+            font-size: 12px; font-weight: 600; cursor: pointer;
+            border: 1px solid #2d3148; background: transparent;
+            color: #9ca3af; transition: all 0.2s;
+        }
+        .btn-sm:hover { background: #1f2937; color: #fff; }
+        .btn-sm.blue { color: #60a5fa; border-color: rgba(96,165,250,0.3); }
+        .btn-sm.blue:hover { background: rgba(96,165,250,0.1); }
+        .btn-sm.red { color: #f87171; border-color: rgba(248,113,113,0.3); }
+        .btn-sm.red:hover { background: rgba(248,113,113,0.1); }
+        .date-badge {
+            font-size: 11px; color: #9ca3af;
+            background: rgba(55,65,81,0.5);
+            padding: 5px 10px; border-radius: 6px;
+        }
+
+        /* Card */
+        .card {
+            background: #1c1f2e;
+            border: 1px solid #2d3148;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .card-header {
+            display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: 8px;
+            padding: 16px 20px;
+            border-bottom: 1px solid #2d3148;
+        }
+        .card-header h3 { font-size: 14px; color: #fff; font-weight: 700; margin: 0; }
+        .card-body { padding: 20px; }
+
+        /* Input Form */
+        .input-section { margin-top: 20px; }
+        .input-section .card-body { padding: 20px; }
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .form-group { display: flex; flex-direction: column; gap: 4px; }
+        .form-group label { font-size: 11px; color: #6b7280; font-weight: 500; }
+        .form-group input, .form-group select {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid #2d3148;
+            background: #151720;
+            color: #e2e4f0;
+            font-size: 13px;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+        }
+        .form-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+        .btn {
+            padding: 8px 18px; border-radius: 8px;
+            font-size: 13px; font-weight: 600; cursor: pointer;
+            border: none; transition: all 0.2s; font-family: inherit;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            color: white;
+        }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(99,102,241,0.3); }
+        .btn-secondary {
+            background: rgba(55,65,81,0.5);
+            color: #e2e4f0;
+            border: 1px solid #374151;
+        }
+        .btn-secondary:hover { background: #374151; }
+        .shortcut-hint { font-size: 11px; color: #4b5563; align-self: center; }
+
+        /* Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-top: 20px;
+        }
+        .stat-card {
+            background: #1c1f2e;
+            border: 1px solid #2d3148;
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            transition: transform 0.2s, background 0.2s;
+        }
+        .stat-card:hover { transform: translateY(-2px); background: #222536; }
+        .stat-value { font-size: 24px; font-weight: 800; margin-bottom: 4px; }
+        .stat-label { font-size: 11px; color: #6b7280; font-weight: 500; }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 8px; margin-top: 20px; flex-wrap: wrap; }
+        .tab-btn {
+            padding: 10px 20px; border-radius: 10px;
+            font-weight: 600; font-size: 13px; cursor: pointer;
+            transition: all 0.2s; border: 1px solid #2d3148;
+            background: transparent; color: #6b7280; font-family: inherit;
+        }
+        .tab-btn.active { background: rgba(99,102,241,0.15); border-color: #6366f1; color: #818cf8; }
+        .tab-btn:hover:not(.active) { background: #1f2937; color: #d1d5db; }
+        .tab-content { margin-top: 16px; }
+
+        /* Table */
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        thead th {
+            font-size: 11px; color: #6b7280;
+            font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #2d3148;
+            background: rgba(15,17,23,0.3);
+            white-space: nowrap;
+        }
+        tbody td {
+            padding: 10px 16px; font-size: 13px;
+            border-bottom: 1px solid rgba(45,49,72,0.5);
+            vertical-align: middle;
+        }
+        tbody tr { transition: background 0.15s; }
+        tbody tr:hover { background: rgba(55,65,81,0.2); }
+        .cat-badge {
+            font-size: 11px; padding: 3px 10px;
+            border-radius: 999px; font-weight: 600;
+            white-space: nowrap; display: inline-block;
+        }
+        .cat-Work { background: rgba(34,197,94,0.12); color: #22c55e; border: 1px solid rgba(34,197,94,0.25); }
+        .cat-Personal { background: rgba(139,92,246,0.12); color: #a78bfa; border: 1px solid rgba(139,92,246,0.25); }
+        .cat-Rest { background: rgba(59,130,246,0.12); color: #60a5fa; border: 1px solid rgba(59,130,246,0.25); }
+        .cat-Development { background: rgba(234,179,8,0.12); color: #fbbf24; border: 1px solid rgba(234,179,8,0.25); }
+        .cat-Waste { background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.25); }
+        .focus-dots { display: flex; gap: 3px; align-items: center; }
+        .fd { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
         .fh { background: #22c55e; }
         .fm { background: #eab308; }
         .fl { background: #ef4444; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-        .af { animation: fadeIn 0.35s ease-out forwards; }
-        .progress-bar { height: 8px; background: rgba(45,49,72,0.8); border-radius: 4px; overflow: hidden; }
-        .progress-fill { height: 100%; border-radius: 4px; transition: width 0.8s ease-out; }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #0f1117; }
-        ::-webkit-scrollbar-thumb { background: #2d3148; border-radius: 3px; }
-        .alert-box { border-left: 4px solid; padding: 14px; border-radius: 8px; }
-        .tab-btn { padding: 10px 20px; border-radius: 10px; font-weight: 600; font-size: 0.875rem; transition: all 0.2s; border: 1px solid transparent; cursor: pointer; }
-        .tab-btn.active { background: rgba(99,102,241,0.15); border-color: #6366f1; color: #6366f1; }
-        .tab-btn:not(.active) { color: #8b8fa3; border-color: #2d3148; }
-        .tab-btn:not(.active):hover { background: rgba(45,49,72,0.5); }
-        .toast { position: fixed; bottom: 24px; right: 24px; padding: 14px 24px; border-radius: 10px; font-weight: 600; z-index: 100; animation: slideIn 0.3s ease-out; }
-        @keyframes slideIn { from { opacity: 0; transform: translateX(100%); } to { opacity: 1; transform: translateX(0); } }
-        .pulse-red { animation: pulseR 2s infinite; }
-        @keyframes pulseR { 0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); } 50% { box-shadow: 0 0 0 8px rgba(239,68,68,0); } }
-        .glass-hover:hover { background: rgba(30,33,50,0.9); transform: translateY(-2px); transition: all 0.2s; }
+        .fd-off { background: #374151; }
+        .time-cell { font-family: 'Courier New', monospace; font-size: 12px; color: #9ca3af; }
+        .del-btn {
+            background: none; border: none; cursor: pointer;
+            font-size: 16px; color: #4b5563; transition: color 0.2s; padding: 4px;
+        }
+        .del-btn:hover { color: #ef4444; }
+        .empty-state { text-align: center; padding: 48px 16px; color: #4b5563; }
+        .empty-state .emoji { font-size: 32px; margin-bottom: 8px; }
+        .empty-state p { margin: 0; font-size: 14px; }
+        .empty-state small { font-size: 11px; color: #374151; }
+        .flag-waste { font-size: 10px; color: #f87171; background: rgba(239,68,68,0.1); padding: 2px 6px; border-radius: 4px; margin-left: 4px; }
+        .flag-focus { font-size: 10px; color: #fbbf24; background: rgba(234,179,8,0.1); padding: 2px 6px; border-radius: 4px; margin-left: 4px; }
+
+        /* Progress Bar */
+        .progress-bar { height: 8px; background: #1f2937; border-radius: 4px; overflow: hidden; }
+        .progress-fill { height: 100%; border-radius: 4px; transition: width 0.8s ease; }
+
+        /* Alert Box */
+        .alert { border-left: 4px solid; padding: 14px 16px; border-radius: 8px; margin-bottom: 8px; }
+        .alert-red { border-color: #ef4444; background: rgba(239,68,68,0.05); }
+        .alert-yellow { border-color: #eab308; background: rgba(234,179,8,0.05); }
+        .alert-green { border-color: #22c55e; background: rgba(34,197,94,0.05); }
+        .alert-gray { border-color: #6b7280; background: rgba(107,114,128,0.05); }
+
+        /* Charts */
+        .chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; margin-top: 16px; }
+        .chart-card { background: #1c1f2e; border: 1px solid #2d3148; border-radius: 12px; padding: 20px; }
+        .chart-card h4 { font-size: 13px; color: #fff; font-weight: 600; margin: 0 0 16px; }
+        canvas { max-height: 280px; }
+
+        /* Pulse */
+        .pulse { animation: pulseAnim 2s infinite; }
+        @keyframes pulseAnim { 0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); } 50% { box-shadow: 0 0 0 10px rgba(239,68,68,0); } }
+
+        /* Fade in */
+        .fade { animation: fadeIn 0.35s ease forwards; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+        /* Toast */
+        .toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 999; display: flex; flex-direction: column; gap: 8px; }
+        .toast {
+            padding: 12px 20px; border-radius: 8px;
+            font-size: 13px; font-weight: 600;
+            animation: toastIn 0.3s ease;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+        }
+        .toast-success { background: rgba(34,197,94,0.9); color: white; }
+        .toast-error { background: rgba(239,68,68,0.9); color: white; }
+        .toast-info { background: rgba(59,130,246,0.9); color: white; }
+        @keyframes toastIn { from { opacity:0; transform:translateX(100%); } to { opacity:1; transform:translateX(0); } }
+
+        /* Footer */
+        .footer { text-align: center; padding: 24px; font-size: 12px; color: #374151; border-top: 1px solid #1f2937; margin-top: 32px; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .form-row { grid-template-columns: 1fr 1fr; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .chart-grid { grid-template-columns: 1fr; }
+            .header-inner { padding: 10px 12px; }
+        }
+        @media (max-width: 480px) {
+            .form-row { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+            .tab-btn { padding: 8px 14px; font-size: 12px; }
+        }
+
+        .hidden { display: none !important; }
+        .text-center { text-align: center; }
+        .text-green { color: #22c55e; }
+        .text-red { color: #ef4444; }
+        .text-yellow { color: #eab308; }
+        .text-blue { color: #60a5fa; }
+        .text-gray { color: #9ca3af; }
+        .text-white { color: #fff; }
+        .fw-bold { font-weight: 700; }
+        .text-sm { font-size: 13px; }
+        .text-xs { font-size: 11px; }
+        .mb-1 { margin-bottom: 4px; }
+        .mb-2 { margin-bottom: 8px; }
+        .mb-3 { margin-bottom: 12px; }
+        .mb-4 { margin-bottom: 16px; }
+        .mt-1 { margin-top: 4px; }
+        .mt-2 { margin-top: 8px; }
+        .mt-3 { margin-top: 12px; }
+        .mt-4 { margin-top: 16px; }
+        .space-y-2 > * + * { margin-top: 8px; }
+        .space-y-3 > * + * { margin-top: 12px; }
+        .gap-2 { gap: 8px; }
+        .gap-3 { gap: 12px; }
+        .flex { display: flex; }
+        .flex-wrap { flex-wrap: wrap; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .w-full { width: 100%; }
+        .leading-relaxed { line-height: 1.6; }
     </style>
 </head>
 <body>
 
-<header class="sticky top-0 z-50 glass border-b border-gray-800/60">
-    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between flex-wrap gap-2">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-lg">AT</div>
-            <div>
-                <h1 class="text-lg font-bold text-white">Activity Tracker</h1>
-                <p class="text-xs text-gray-500">Data-driven feedback. No excuses.</p>
+<!-- Header -->
+<header class="header">
+    <div class="header-inner">
+        <div class="logo-area">
+            <div class="logo">AT</div>
+            <div class="logo-text">
+                <h1>Activity Tracker</h1>
+                <p>Productivity Analyzer</p>
             </div>
         </div>
-        <div class="flex items-center gap-3">
-            <span id="currentDate" class="text-xs text-gray-400 bg-gray-800/50 px-3 py-1.5 rounded-lg"></span>
-            <button onclick="loadSample()" class="text-xs text-blue-400 hover:text-blue-300 px-3 py-1.5 rounded-lg hover:bg-gray-800/50 transition">Load Demo</button>
-            <button onclick="clearAll()" class="text-xs text-gray-500 hover:text-red-400 px-3 py-1.5 rounded-lg hover:bg-gray-800/50 transition">Clear All</button>
+        <div class="header-actions">
+            <span id="currentDate" class="date-badge"></span>
+            <button class="btn-sm blue" onclick="loadSample()">Load Demo</button>
+            <button class="btn-sm red" onclick="clearAll()">Clear All</button>
         </div>
     </div>
 </header>
 
-<main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+<div class="container">
 
     <!-- Input -->
-    <section class="card p-6">
-        <div class="flex items-center justify-between mb-4">
-            <h2 class="text-base font-bold text-white">Log Activity</h2>
-            <span id="entryCount" class="text-xs text-gray-500 bg-gray-800/50 px-3 py-1 rounded-lg">0 entries</span>
+    <div class="input-section card">
+        <div class="card-header">
+            <h3>📝 Log Activity</h3>
+            <span id="entryCount" style="font-size:12px;color:#6b7280;">0 entries</span>
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 mb-4">
-            <div><label class="text-xs text-gray-500 mb-1 block">Start Time</label><input type="time" id="startTime" class="input-dark w-full rounded-lg px-3 py-2 text-sm" value="08:00"></div>
-            <div><label class="text-xs text-gray-500 mb-1 block">End Time</label><input type="time" id="endTime" class="input-dark w-full rounded-lg px-3 py-2 text-sm" value="09:00"></div>
-            <div><label class="text-xs text-gray-500 mb-1 block">Activity</label><input type="text" id="actName" class="input-dark w-full rounded-lg px-3 py-2 text-sm" placeholder="e.g., Review emails"></div>
-            <div><label class="text-xs text-gray-500 mb-1 block">Category</label><select id="cat" class="input-dark w-full rounded-lg px-3 py-2 text-sm"><option value="Work"> Work</option><option value="Personal"> Personal</option><option value="Rest"> Rest</option><option value="Development"> Development</option><option value="Waste"> Waste</option></select></div>
-            <div><label class="text-xs text-gray-500 mb-1 block">Focus (1-5)</label><input type="number" id="focusLvl" class="input-dark w-full rounded-lg px-3 py-2 text-sm" min="1" max="5" value="3"></div>
-            <div><label class="text-xs text-gray-500 mb-1 block">Notes</label><input type="text" id="note" class="input-dark w-full rounded-lg px-3 py-2 text-sm" placeholder="Brief note..."></div>
-        </div>
-        <div class="flex gap-3 flex-wrap">
-            <button onclick="addEntry()" class="btn-primary px-5 py-2 rounded-lg text-sm">Add Activity</button>
-            <button onclick="quickAdd()" class="bg-gray-700/50 hover:bg-gray-700 text-white px-5 py-2 rounded-lg text-sm font-semibold transition border border-gray-600/50">Quick Add (60m)</button>
-            <span class="text-xs text-gray-600 self-center">Ctrl+Enter to submit</span>
-        </div>
-    </section>
-
-    <!-- Stats -->
-    <section id="statsSec" class="hidden grid grid-cols-2 lg:grid-cols-5 gap-3">
-        <div class="card p-4 text-center glass-hover"><div class="text-2xl font-bold text-green-400" id="sTotal">0h</div><div class="text-xs text-gray-500 mt-1">Total Hours</div></div>
-        <div class="card p-4 text-center glass-hover"><div class="text-2xl font-bold text-green-400" id="sProd">0h</div><div class="text-xs text-gray-500 mt-1">Productive</div></div>
-        <div class="card p-4 text-center glass-hover"><div class="text-2xl font-bold text-red-400" id="sWaste">0h</div><div class="text-xs text-gray-500 mt-1">Wasted</div></div>
-        <div class="card p-4 text-center glass-hover"><div class="text-2xl font-bold text-yellow-400" id="sFocus">0.0</div><div class="text-xs text-gray-500 mt-1">Avg Focus</div></div>
-        <div class="card p-4 text-center glass-hover"><div class="text-2xl font-bold text-blue-400" id="sPeak">--:--</div><div class="text-xs text-gray-500 mt-1">Peak Hour</div></div>
-    </section>
-
-    <!-- Tabs -->
-    <div class="flex gap-2 flex-wrap">
-        <button onclick="switchTab('table')" id="tab-table" class="tab-btn active">Table</button>
-        <button onclick="switchTab('analysis')" id="tab-analysis" class="tab-btn">Analysis</button>
-        <button onclick="switchTab('feedback')" id="tab-feedback" class="tab-btn">AI Feedback</button>
-    </div>
-
-    <!-- Table -->
-    <section id="content-table" class="card overflow-hidden">
-        <div class="p-4 border-b border-gray-800/60 flex items-center justify-between">
-            <h3 class="font-bold text-white text-sm">Activity Log</h3>
-            <div class="flex gap-2">
-                <button onclick="doSort('time')" class="text-xs bg-gray-700/50 hover:bg-gray-700 text-gray-300 px-3 py-1.5 rounded-lg transition">Sort Time</button>
-                <button onclick="doSort('focus')" class="text-xs bg-gray-700/50 hover:bg-gray-700 text-gray-300 px-3 py-1.5 rounded-lg transition">Sort Focus</button>
+        <div class="card-body">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Start Time</label>
+                    <input type="time" id="startTime" value="08:00">
+                </div>
+                <div class="form-group">
+                    <label>End Time</label>
+                    <input type="time" id="endTime" value="09:00">
+                </div>
+                <div class="form-group">
+                    <label>Activity</label>
+                    <input type="text" id="actName" placeholder="e.g., Review emails">
+                </div>
+                <div class="form-group">
+                    <label>Category</label>
+                    <select id="cat">
+                        <option value="Work">Work</option>
+                        <option value="Personal">Personal</option>
+                        <option value="Rest">Rest</option>
+                        <option value="Development">Development</option>
+                        <option value="Waste">Waste</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Focus (1-5)</label>
+                    <input type="number" id="focusLvl" min="1" max="5" value="3">
+                </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <input type="text" id="note" placeholder="Brief note...">
+                </div>
+            </div>
+            <div class="form-actions">
+                <button class="btn btn-primary" onclick="addEntry()">Add Activity</button>
+                <button class="btn btn-secondary" onclick="quickAdd()">Quick Add (60m)</button>
+                <span class="shortcut-hint">Ctrl+Enter to submit</span>
             </div>
         </div>
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead class="border-b border-gray-800/60 bg-gray-900/30">
-                    <tr>
-                        <th class="px-4 py-3 text-left text-gray-500 font-bold text-xs uppercase tracking-wider">Time</th>
-                        <th class="px-4 py-3 text-left text-gray-500 font-bold text-xs uppercase tracking-wider">Activity</th>
-                        <th class="px-4 py-3 text-left text-gray-500 font-bold text-xs uppercase tracking-wider">Category</th>
-                        <th class="px-4 py-3 text-left text-gray-500 font-bold text-xs uppercase tracking-wider">Focus</th>
-                        <th class="px-4 py-3 text-left text-gray-500 font-bold text-xs uppercase tracking-wider">Duration</th>
-                        <th class="px-4 py-3 text-left text-gray-500 font-bold text-xs uppercase tracking-wider">Notes</th>
-                        <th class="px-4 py-3 text-center text-gray-500 font-bold text-xs uppercase tracking-wider">Del</th>
-                    </tr>
-                </thead>
-                <tbody id="tbody"></tbody>
-            </table>
+    </div>
+
+    <!-- Stats -->
+    <div id="statsSec" class="stats-grid hidden">
+        <div class="stat-card">
+            <div class="stat-value text-green" id="sTotal">0h</div>
+            <div class="stat-label">Total Hours</div>
         </div>
-    </section>
-
-    <!-- Analysis -->
-    <section id="content-analysis" class="hidden space-y-4">
-        <div class="card p-6 text-center">
-            <h3 class="text-sm text-gray-400 mb-2">Productivity Score</h3>
-            <div id="oScore" class="text-5xl font-black mb-2">--</div>
-            <div id="sLabel" class="text-sm font-bold"></div>
-            <div class="progress-bar mt-4 max-w-sm mx-auto"><div id="sBar" class="progress-fill" style="width:0%"></div></div>
+        <div class="stat-card">
+            <div class="stat-value text-green" id="sProd">0h</div>
+            <div class="stat-label">Productive</div>
         </div>
-        <div class="card p-5"><h3 class="font-bold text-white mb-4 text-sm">Time Distribution</h3><div id="catBreak" class="space-y-3"></div></div>
-        <div class="card p-5"><h3 class="font-bold text-red-400 mb-4 text-sm">Time Waste Detection</h3><div id="wasteDet"></div></div>
-        <div class="card p-5"><h3 class="font-bold text-blue-400 mb-4 text-sm">Focus Analysis</h3><div id="focusDet"></div></div>
-        <div class="card p-5"><h3 class="font-bold text-green-400 mb-4 text-sm">Peak Performance Window</h3><div id="peakDet"></div></div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="card p-5"><h3 class="font-bold text-white mb-4 text-sm">Category Distribution</h3><canvas id="catChart"></canvas></div>
-            <div class="card p-5"><h3 class="font-bold text-white mb-4 text-sm">Focus Over Time</h3><canvas id="focusLine"></canvas></div>
+        <div class="stat-card">
+            <div class="stat-value text-red" id="sWaste">0h</div>
+            <div class="stat-label">Wasted</div>
         </div>
-    </section>
+        <div class="stat-card">
+            <div class="stat-value text-yellow" id="sFocus">0.0</div>
+            <div class="stat-label">Avg Focus</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value text-blue" id="sPeak">--:--</div>
+            <div class="stat-label">Peak Hour</div>
+        </div>
+    </div>
 
-    <!-- Feedback -->
-    <section id="content-feedback" class="hidden space-y-4">
-        <div class="card p-5"><h3 class="font-bold text-red-400 mb-4 text-base">3 Critical Problems</h3><div id="probList" class="space-y-3"></div></div>
-        <div class="card p-5"><h3 class="font-bold text-green-400 mb-4 text-base">3 Immediate Fixes</h3><div id="fixList" class="space-y-3"></div></div>
-        <div class="card p-5 pulse-red" style="border: 2px solid rgba(239,68,68,0.2);"><h3 class="font-bold text-red-400 mb-4 text-base">Strict Verdict</h3><div id="verdict" class="text-sm leading-relaxed text-gray-300"></div></div>
-    </section>
+    <!-- Tabs -->
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('table', this)">📋 Table</button>
+        <button class="tab-btn" onclick="switchTab('analysis', this)">📊 Analysis</button>
+        <button class="tab-btn" onclick="switchTab('feedback', this)">⚡ Feedback</button>
+    </div>
 
-</main>
+    <!-- Table Tab -->
+    <div id="content-table" class="tab-content">
+        <div class="card">
+            <div class="card-header">
+                <h3>Activity Log</h3>
+                <div class="flex gap-2">
+                    <button class="btn-sm" onclick="doSort('time')">Sort Time</button>
+                    <button class="btn-sm" onclick="doSort('focus')">Sort Focus</button>
+                </div>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Activity</th>
+                            <th>Category</th>
+                            <th>Focus</th>
+                            <th>Duration</th>
+                            <th>Notes</th>
+                            <th style="text-align:center">Del</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 
-<footer class="text-center py-6 text-xs text-gray-700 border-t border-gray-800/50 mt-8">Activity Tracker — Results speak. No excuses.</footer>
+    <!-- Analysis Tab -->
+    <div id="content-analysis" class="tab-content hidden">
+        <!-- Score -->
+        <div class="card text-center mb-4">
+            <div class="card-body">
+                <p class="text-xs text-gray mb-1" style="margin:0 0 8px;">Productivity Score</p>
+                <div id="oScore" class="text-5xl fw-bold mb-2">--</div>
+                <div id="sLabel" class="text-sm fw-bold"></div>
+                <div class="progress-bar mt-3" style="max-width:400px;margin:0 auto;">
+                    <div id="sBar" class="progress-fill" style="width:0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category Breakdown -->
+        <div class="card mb-4">
+            <div class="card-header"><h3>Time Distribution</h3></div>
+            <div class="card-body" id="catBreak"></div>
+        </div>
+
+        <!-- Waste Detection -->
+        <div class="card mb-4">
+            <div class="card-header"><h3 class="text-red">🔴 Time Waste Detection</h3></div>
+            <div class="card-body" id="wasteDet"></div>
+        </div>
+
+        <!-- Focus -->
+        <div class="card mb-4">
+            <div class="card-header"><h3 class="text-blue">🎯 Focus Analysis</h3></div>
+            <div class="card-body" id="focusDet"></div>
+        </div>
+
+        <!-- Peak -->
+        <div class="card mb-4">
+            <div class="card-header"><h3 class="text-green">📈 Peak Performance Window</h3></div>
+            <div class="card-body" id="peakDet"></div>
+        </div>
+
+        <!-- Charts -->
+        <div class="chart-grid">
+            <div class="chart-card">
+                <h4>Category Distribution</h4>
+                <canvas id="catChart"></canvas>
+            </div>
+            <div class="chart-card">
+                <h4>Focus Over Time</h4>
+                <canvas id="focusLine"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feedback Tab -->
+    <div id="content-feedback" class="tab-content hidden">
+        <div class="card mb-4">
+            <div class="card-header"><h3 class="text-red">🔴 3 Critical Problems</h3></div>
+            <div class="card-body" id="probList"></div>
+        </div>
+        <div class="card mb-4">
+            <div class="card-header"><h3 class="text-green">🟢 3 Immediate Fixes</h3></div>
+            <div class="card-body" id="fixList"></div>
+        </div>
+        <div class="card pulse" style="border-color:rgba(239,68,68,0.3);">
+            <div class="card-header"><h3 class="text-red">⚖️ Strict Verdict</h3></div>
+            <div class="card-body">
+                <div id="verdict" class="text-sm leading-relaxed" style="color:#9ca3af;"></div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<footer class="footer">Activity Tracker — Results speak. No excuses.</footer>
+<div class="toast-container" id="toastBox"></div>
 
 <script>
-let entries = [];
-let charts = {};
+var entries = [];
+var chartInstances = {};
 
-document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+// Date
+document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-US', {
+    weekday:'long', year:'numeric', month:'long', day:'numeric'
+});
 
-function t2m(t) { const [h,m]=t.split(':').map(Number); return h*60+m; }
+function t2m(t) { var p = t.split(':'); return parseInt(p[0])*60 + parseInt(p[1]); }
 function m2t(m) { return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'); }
-function dur(s,e) { let d=t2m(e)-t2m(s); return d<0?d+1440:d; }
+function calcDur(s,e) { var d = t2m(e) - t2m(s); return d < 0 ? d+1440 : d; }
 
 function addEntry() {
-    const s=document.getElementById('startTime').value;
-    const e=document.getElementById('endTime').value;
-    const n=document.getElementById('actName').value.trim();
-    const c=document.getElementById('cat').value;
-    const f=parseInt(document.getElementById('focusLvl').value);
-    const nt=document.getElementById('note').value.trim();
-    if(!s||!e||!n) return toast('Fill all required fields','error');
-    if(f<1||f>5) return toast('Focus must be 1-5','error');
-    const d=dur(s,e);
-    if(d<=0) return toast('End must be after start','error');
+    var s = document.getElementById('startTime').value;
+    var e = document.getElementById('endTime').value;
+    var n = document.getElementById('actName').value.trim();
+    var c = document.getElementById('cat').value;
+    var f = parseInt(document.getElementById('focusLvl').value);
+    var nt = document.getElementById('note').value.trim();
+    if (!s || !e || !n) return toast('Fill all required fields','error');
+    if (f<1||f>5) return toast('Focus must be 1-5','error');
+    var d = calcDur(s,e);
+    if (d<=0) return toast('End must be after start','error');
     entries.push({id:Date.now(),start:s,end:e,name:n,category:c,focus:f,notes:nt,duration:d});
-    document.getElementById('startTime').value=e;
-    document.getElementById('endTime').value=m2t(t2m(e)+60);
-    document.getElementById('actName').value='';
-    document.getElementById('note').value='';
+    document.getElementById('startTime').value = e;
+    document.getElementById('endTime').value = m2t(t2m(e)+60);
+    document.getElementById('actName').value = '';
+    document.getElementById('note').value = '';
     toast('Activity added','success');
     refresh();
 }
 
 function quickAdd() {
-    const s=document.getElementById('startTime').value;
-    const e=m2t(t2m(s)+60);
-    const n=document.getElementById('actName').value.trim()||'Quick Activity';
-    const c=document.getElementById('cat').value;
-    const f=parseInt(document.getElementById('focusLvl').value);
-    const nt=document.getElementById('note').value.trim();
+    var s = document.getElementById('startTime').value;
+    var e = m2t(t2m(s)+60);
+    var n = document.getElementById('actName').value.trim() || 'Quick Activity';
+    var c = document.getElementById('cat').value;
+    var f = parseInt(document.getElementById('focusLvl').value);
+    var nt = document.getElementById('note').value.trim();
     entries.push({id:Date.now(),start:s,end:e,name:n,category:c,focus:f,notes:nt,duration:60});
-    document.getElementById('startTime').value=e;
-    document.getElementById('endTime').value=m2t(t2m(e)+60);
-    document.getElementById('actName').value='';
+    document.getElementById('startTime').value = e;
+    document.getElementById('endTime').value = m2t(t2m(e)+60);
+    document.getElementById('actName').value = '';
     toast('Quick add (60m)','success');
     refresh();
 }
 
-function del(id) { entries=entries.filter(a=>a.id!==id); refresh(); toast('Deleted','info'); }
+function delEntry(id) {
+    entries = entries.filter(function(a){ return a.id !== id; });
+    refresh();
+    toast('Deleted','info');
+}
 
 function doSort(by) {
-    if(by==='time') entries.sort((a,b)=>t2m(a.start)-t2m(b.start));
-    else entries.sort((a,b)=>b.focus-a.focus);
+    if (by === 'time') {
+        entries.sort(function(a,b){ return t2m(a.start) - t2m(b.start); });
+    } else {
+        entries.sort(function(a,b){ return b.focus - a.focus; });
+    }
     renderTable();
 }
 
-function refresh() { renderTable(); updateStats(); runAnalysis(); save(); }
+function refresh() {
+    renderTable();
+    updateStats();
+    runAnalysis();
+    saveData();
+}
 
 function renderTable() {
-    const tb=document.getElementById('tbody');
-    document.getElementById('entryCount').textContent=entries.length+' entries';
-    if(!entries.length) { tb.innerHTML='<tr><td colspan="7" class="px-4 py-12 text-center text-gray-600"><div class="text-3xl mb-2">📝</div><p>No activities logged</p></td></tr>'; return; }
-    tb.innerHTML=entries.map((a,i)=>{
-        const cls='cat-'+a.category;
-        const fc=a.focus>=4?'fh':a.focus>=3?'fm':'fl';
-        const h=Math.floor(a.duration/60), m=a.duration%60;
-        const dur=h>0?h+'h '+m+'m':m+'m';
-        const flags=[];
-        if(a.category==='Waste') flags.push('<span class="text-[10px] text-red-500 bg-red-500/10 px-1.5 py-0.5 rounded ml-1">WASTE</span>');
-        if(a.focus<=2&&a.category==='Work') flags.push('<span class="text-[10px] text-yellow-500 bg-yellow-500/10 px-1.5 py-0.5 rounded ml-1">LOW FOCUS</span>');
-        return `<tr class="hover:bg-gray-800/30 transition-colors border-b border-gray-800/40 af" style="animation-delay:${i*0.04}s">
-            <td class="px-4 py-3 text-gray-300 font-mono text-xs">${a.start} → ${a.end}</td>
-            <td class="px-4 py-3 text-white font-semibold text-sm">${a.name} ${flags.join('')}</td>
-            <td class="px-4 py-3"><span class="category-badge ${cls}">${a.category}</span></td>
-            <td class="px-4 py-3"><div class="flex items-center gap-0.5">${[1,2,3,4,5].map(n=>`<span class="focus-dot ${n<=a.focus?fc:'bg-gray-700'}"></span>`).join('')}<span class="text-[10px] text-gray-500 ml-1">${a.focus}/5</span></div></td>
-            <td class="px-4 py-3 text-gray-400 text-xs">${dur}</td>
-            <td class="px-4 py-3 text-gray-500 text-xs max-w-[120px] truncate">${a.notes||'-'}</td>
-            <td class="px-4 py-3 text-center"><button onclick="del(${a.id})" class="text-gray-600 hover:text-red-400 transition">🗑️</button></td>
-        </tr>`;
-    }).join('');
+    var tb = document.getElementById('tbody');
+    document.getElementById('entryCount').textContent = entries.length + ' entries';
+    if (!entries.length) {
+        tb.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="emoji">📝</div><p>No activities logged</p><small>Add your daily activities to start tracking</small></div></td></tr>';
+        return;
+    }
+    var html = '';
+    for (var i=0; i<entries.length; i++) {
+        var a = entries[i];
+        var cls = 'cat-' + a.category;
+        var fc = a.focus >= 4 ? 'fh' : (a.focus >= 3 ? 'fm' : 'fl');
+        var hrs = Math.floor(a.duration / 60);
+        var mins = a.duration % 60;
+        var durStr = hrs > 0 ? hrs + 'h ' + mins + 'm' : mins + 'm';
+        var flags = '';
+        if (a.category === 'Waste') flags += '<span class="flag-waste">WASTE</span>';
+        if (a.focus <= 2 && a.category === 'Work') flags += '<span class="flag-focus">LOW FOCUS</span>';
+
+        var dots = '';
+        for (var j=1; j<=5; j++) {
+            dots += '<span class="fd ' + (j <= a.focus ? fc : 'fd-off') + '"></span>';
+        }
+
+        html += '<tr class="fade" style="animation-delay:' + (i*0.03) + 's">';
+        html += '<td class="time-cell">' + a.start + ' \u2192 ' + a.end + '</td>';
+        html += '<td class="fw-bold">' + a.name + ' ' + flags + '</td>';
+        html += '<td><span class="cat-badge ' + cls + '">' + a.category + '</span></td>';
+        html += '<td><div class="focus-dots">' + dots + '<span style="font-size:10px;color:#6b7280;margin-left:4px;">' + a.focus + '/5</span></div></td>';
+        html += '<td style="color:#9ca3af;font-size:12px;">' + durStr + '</td>';
+        html += '<td style="color:#6b7280;font-size:12px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (a.notes || '-') + '</td>';
+        html += '<td style="text-align:center;"><button class="del-btn" onclick="delEntry(' + a.id + ')">\u{1F5D1}\uFE0F</button></td>';
+        html += '</tr>';
+    }
+    tb.innerHTML = html;
 }
 
 function updateStats() {
-    const sec=document.getElementById('statsSec');
-    if(!entries.length) { sec.classList.add('hidden'); return; }
+    var sec = document.getElementById('statsSec');
+    if (!entries.length) { sec.classList.add('hidden'); return; }
     sec.classList.remove('hidden');
-    const total=entries.reduce((s,a)=>s+a.duration,0);
-    const work=entries.filter(a=>a.category==='Work').reduce((s,a)=>s+a.duration,0);
-    const waste=entries.filter(a=>a.category==='Waste').reduce((s,a)=>s+a.duration,0);
-    const dev=entries.filter(a=>a.category==='Development').reduce((s,a)=>s+a.duration,0);
-    const af=entries.reduce((s,a)=>s+a.focus,0)/entries.length;
-    const hf={};
-    entries.forEach(a=>{
-        const sh=Math.floor(t2m(a.start)/60), eh=Math.ceil(t2m(a.end)/60);
-        for(let h=sh;h<eh&&h<24&&h>=0;h++){
-            if(!hf[h]) hf[h]={s:0,c:0};
-            hf[h].s+=a.focus; hf[h].c++;
+    var total = 0, work = 0, waste = 0, dev = 0, sumFocus = 0;
+    for (var i=0; i<entries.length; i++) {
+        total += entries[i].duration;
+        sumFocus += entries[i].focus;
+        if (entries[i].category === 'Work') work += entries[i].duration;
+        if (entries[i].category === 'Waste') waste += entries[i].duration;
+        if (entries[i].category === 'Development') dev += entries[i].duration;
+    }
+    var avgFocus = sumFocus / entries.length;
+    var hf = {};
+    for (var i=0; i<entries.length; i++) {
+        var sh = Math.floor(t2m(entries[i].start)/60);
+        var eh = Math.ceil(t2m(entries[i].end)/60);
+        for (var h = sh; h < eh && h < 24 && h >= 0; h++) {
+            if (!hf[h]) hf[h] = {s:0, c:0};
+            hf[h].s += entries[i].focus;
+            hf[h].c++;
         }
-    });
-    let pk='--',ps=0;
-    Object.keys(hf).forEach(h=>{ const avg=hf[h].s/hf[h].c; if(avg>ps){ps=avg; pk=String(h).padStart(2,'0')+':00'; }});
-    document.getElementById('sTotal').textContent=(total/60).toFixed(1)+'h';
-    document.getElementById('sProd').textContent=((work+dev)/60).toFixed(1)+'h';
-    document.getElementById('sWaste').textContent=(waste/60).toFixed(1)+'h';
-    document.getElementById('sFocus').textContent=af.toFixed(1);
-    document.getElementById('sPeak').textContent=pk;
+    }
+    var pk = '--', ps = 0;
+    for (var h in hf) {
+        var avg = hf[h].s / hf[h].c;
+        if (avg > ps) { ps = avg; pk = String(h).padStart(2,'0') + ':00'; }
+    }
+    document.getElementById('sTotal').textContent = (total/60).toFixed(1) + 'h';
+    document.getElementById('sProd').textContent = ((work+dev)/60).toFixed(1) + 'h';
+    document.getElementById('sWaste').textContent = (waste/60).toFixed(1) + 'h';
+    document.getElementById('sFocus').textContent = avgFocus.toFixed(1);
+    document.getElementById('sPeak').textContent = pk;
 }
 
 function runAnalysis() {
-    if(!entries.length) return;
-    const total=entries.reduce((s,a)=>s+a.duration,0);
-    const work=entries.filter(a=>a.category==='Work').reduce((s,a)=>s+a.duration,0);
-    const waste=entries.filter(a=>a.category==='Waste').reduce((s,a)=>s+a.duration,0);
-    const dev=entries.filter(a=>a.category==='Development').reduce((s,a)=>s+a.duration,0);
-    const af=entries.reduce((s,a)=>s+a.focus,0)/entries.length;
-    const wr=waste/total, wkr=work/total, dr=dev/total;
-    const sc=Math.min(100,Math.round(wkr*35+(af/5)*30+dr*20+(1-wr)*15));
-    const oS=document.getElementById('oScore');
-    oS.textContent=sc+'/100';
-    oS.className=`text-5xl font-black mb-2 ${sc>=70?'text-green-400':sc>=50?'text-yellow-400':'text-red-500'}`;
-    document.getElementById('sLabel').innerHTML=sc>=80?'<span class="text-green-400">Highly productive</span>':sc>=60?'<span class="text-yellow-400">Moderate — needs improvement</span>':sc>=40?'<span class="text-red-400">Poor — serious issues</span>':'<span class="text-red-500 font-bold pulse-red">Critical — immediate review</span>';
-    const bar=document.getElementById('sBar'); bar.style.width=sc+'%'; bar.className=`progress-fill ${sc>=70?'bg-green-500':sc>=50?'bg-yellow-500':'bg-red-500'}`;
+    if (!entries.length) return;
 
-    // Breakdown
-    const cats=[{n:'Work',m:work,c:'bg-green-500'},{n:'Development',m:dev,c:'bg-yellow-500'},{n:'Personal',m:entries.filter(a=>a.category==='Personal').reduce((s,a)=>s+a.duration,0),c:'bg-purple-500'},{n:'Rest',m:entries.filter(a=>a.category==='Rest').reduce((s,a)=>s+a.duration,0),c:'bg-blue-500'},{n:'Waste',m:waste,c:'bg-red-500'}].filter(x=>x.m>0);
-    document.getElementById('catBreak').innerHTML=cats.map(c=>{const p=((c.m/total)*100).toFixed(0);return`<div class="flex items-center gap-3"><span class="text-sm text-gray-300 w-24">${c.n}</span><div class="flex-1 progress-bar"><div class="progress-fill ${c.c}" style="width:${p}%"></div></div><span class="text-xs text-gray-500 w-16 text-right">${(c.m/60).toFixed(1)}h</span><span class="text-xs text-gray-500 w-10 text-right">${p}%</span></div>`;}).join('');
+    var total = 0, work = 0, waste = 0, dev = 0, rest = 0, personal = 0, sumFocus = 0;
+    for (var i=0; i<entries.length; i++) {
+        total += entries[i].duration;
+        sumFocus += entries[i].focus;
+        if (entries[i].category === 'Work') work += entries[i].duration;
+        if (entries[i].category === 'Waste') waste += entries[i].duration;
+        if (entries[i].category === 'Development') dev += entries[i].duration;
+        if (entries[i].category === 'Rest') rest += entries[i].duration;
+        if (entries[i].category === 'Personal') personal += entries[i].duration;
+    }
+    var avgFocus = sumFocus / entries.length;
+    var wr = waste / total;
+    var wkr = work / total;
+    var dr = dev / total;
+    var sc = Math.min(100, Math.round(wkr*35 + (avgFocus/5)*30 + dr*20 + (1-wr)*15));
+
+    // Score
+    var oS = document.getElementById('oScore');
+    oS.textContent = sc + '/100';
+    oS.className = 'text-5xl fw-bold mb-2 ' + (sc >= 70 ? 'text-green' : (sc >= 50 ? 'text-yellow' : 'text-red'));
+    var lbl = sc >= 80 ? '<span class="text-green">Highly productive</span>' :
+              (sc >= 60 ? '<span class="text-yellow">Moderate \u2014 needs improvement</span>' :
+              (sc >= 40 ? '<span class="text-red">Poor \u2014 serious issues</span>' :
+              '<span class="text-red fw-bold">Critical \u2014 immediate review</span>'));
+    document.getElementById('sLabel').innerHTML = lbl;
+    var bar = document.getElementById('sBar');
+    bar.style.width = sc + '%';
+    bar.className = 'progress-fill ' + (sc >= 70 ? 'bg-green-500' : (sc >= 50 ? 'bg-yellow-500' : 'bg-red-500'));
+
+    // Category breakdown
+    var cats = [
+        {n:'Work', m:work, c:'bg-green-500'},
+        {n:'Development', m:dev, c:'bg-yellow-500'},
+        {n:'Personal', m:personal, c:'bg-purple-500'},
+        {n:'Rest', m:rest, c:'bg-blue-500'},
+        {n:'Waste', m:waste, c:'bg-red-500'}
+    ].filter(function(c){ return c.m > 0; });
+
+    var bhtml = '';
+    for (var i=0; i<cats.length; i++) {
+        var p = Math.round(cats[i].m / total * 100);
+        var h = (cats[i].m/60).toFixed(1);
+        bhtml += '<div class="flex items-center gap-3 mb-2">';
+        bhtml += '<span style="width:100px;font-size:13px;color:#d1d5db;">' + cats[i].n + '</span>';
+        bhtml += '<div class="progress-bar" style="flex:1;"><div class="progress-fill ' + cats[i].c + '" style="width:' + p + '%"></div></div>';
+        bhtml += '<span style="width:50px;font-size:11px;color:#6b7280;text-align:right;">' + h + 'h</span>';
+        bhtml += '<span style="width:40px;font-size:11px;color:#6b7280;text-align:right;">' + p + '%</span>';
+        bhtml += '</div>';
+    }
+    document.getElementById('catBreak').innerHTML = bhtml;
 
     // Waste
-    const wActs=entries.filter(a=>a.category==='Waste');
-    const lfW=entries.filter(a=>a.focus<=2&&a.category==='Work');
-    let wh='';
-    if(wActs.length) {
-        wh+=`<div class="mb-3 p-3 bg-red-500/10 rounded-lg border border-red-500/20"><p class="text-red-300 font-bold text-sm">Total wasted: ${waste}m (${((wr)*100).toFixed(0)}%)</p></div>`;
-        wActs.forEach(a=>{wh+=`<div class="alert-box border-red-500 bg-red-500/5 rounded-lg p-3 mb-2"><div class="flex justify-between"><span class="font-bold text-red-300 text-sm">${a.name}</span><span class="text-xs text-red-400">${a.duration}m</span></div></div>`;});
-    } else wh+='<p class="text-green-400 text-sm">No waste detected</p>';
-    if(lfW.length) {
-        wh+=`<div class="mt-3"><h4 class="text-sm font-bold text-yellow-400 mb-2">Low focus work:</h4>`;
-        lfW.forEach(a=>{wh+=`<div class="alert-box border-yellow-500 bg-yellow-500/5 rounded-lg p-2 mb-2"><span class="text-sm text-yellow-300">${a.name}</span><span class="text-xs text-yellow-400 ml-2">(${a.duration}m — Focus: ${a.focus}/5)</span></div>`;});
-        wh+='</div>';
+    var wActs = entries.filter(function(a){ return a.category === 'Waste'; });
+    var lfW = entries.filter(function(a){ return a.focus <= 2 && a.category === 'Work'; });
+    var whtml = '';
+    if (wActs.length) {
+        whtml += '<div class="alert alert-red mb-3"><p class="fw-bold text-sm" style="color:#fca5a5;margin:0;">Total wasted: ' + waste + 'm (' + Math.round(wr*100) + '%)</p></div>';
+        for (var i=0; i<wActs.length; i++) {
+            whtml += '<div class="alert alert-red"><div class="flex justify-between"><span class="fw-bold text-sm" style="color:#fca5a5;">' + wActs[i].name + '</span><span class="text-xs" style="color:#f87171;">' + wActs[i].duration + 'm</span></div></div>';
+        }
+    } else {
+        whtml += '<p class="text-green text-sm">No waste detected</p>';
     }
-    document.getElementById('wasteDet').innerHTML=wh;
+    if (lfW.length) {
+        whtml += '<h4 class="text-yellow fw-bold text-sm mt-3 mb-2" style="margin:12px 0 8px;">Low focus work:</h4>';
+        for (var i=0; i<lfW.length; i++) {
+            whtml += '<div class="alert alert-yellow"><span class="text-sm" style="color:#fde68a;">' + lfW[i].name + '</span> <span class="text-xs" style="color:#fbbf24;">(' + lfW[i].duration + 'm \u2014 Focus: ' + lfW[i].focus + '/5)</span></div>';
+        }
+    }
+    document.getElementById('wasteDet').innerHTML = whtml;
 
     // Focus
-    const hi=entries.filter(a=>a.focus>=4),mi=entries.filter(a=>a.focus===3),lo=entries.filter(a=>a.focus<=2);
-    document.getElementById('focusDet').innerHTML=`<div class="grid grid-cols-3 gap-3 mb-4"><div class="bg-green-500/10 rounded-lg p-3 text-center border border-green-500/20"><div class="text-2xl font-bold text-green-400">${hi.length}</div><div class="text-[10px] text-green-300">High (4-5)</div></div><div class="bg-yellow-500/10 rounded-lg p-3 text-center border border-yellow-500/20"><div class="text-2xl font-bold text-yellow-400">${mi.length}</div><div class="text-[10px] text-yellow-300">Mid (3)</div></div><div class="bg-red-500/10 rounded-lg p-3 text-center border border-red-500/20"><div class="text-2xl font-bold text-red-400">${lo.length}</div><div class="text-[10px] text-red-300">Low (1-2)</div></div></div><p class="text-sm text-gray-300">Average: <span class="font-bold ${af>=3?'text-green-400':'text-red-400'}">${af.toFixed(1)}</span>/5</p>${lo.length?'<p class="text-xs text-red-400 mt-2">'+lo.length+' entries with low focus</p>':''}`;
+    var hi = entries.filter(function(a){ return a.focus >= 4; });
+    var mi = entries.filter(function(a){ return a.focus === 3; });
+    var lo = entries.filter(function(a){ return a.focus <= 2; });
+    var fhtml = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;">';
+    fhtml += '<div style="text-align:center;padding:12px;border-radius:8px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);"><div class="text-2xl fw-bold text-green">' + hi.length + '</div><div class="text-xs" style="color:#86efac;">High (4-5)</div></div>';
+    fhtml += '<div style="text-align:center;padding:12px;border-radius:8px;background:rgba(234,179,8,0.08);border:1px solid rgba(234,179,8,0.2);"><div class="text-2xl fw-bold text-yellow">' + mi.length + '</div><div class="text-xs" style="color:#fde68a;">Mid (3)</div></div>';
+    fhtml += '<div style="text-align:center;padding:12px;border-radius:8px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);"><div class="text-2xl fw-bold text-red">' + lo.length + '</div><div class="text-xs" style="color:#fca5a5;">Low (1-2)</div></div>';
+    fhtml += '</div>';
+    fhtml += '<p class="text-sm">Average: <span class="fw-bold ' + (avgFocus >= 3 ? 'text-green' : 'text-red') + '">' + avgFocus.toFixed(1) + '</span>/5</p>';
+    if (lo.length) fhtml += '<p class="text-xs text-red mt-2">' + lo.length + ' entries with low focus</p>';
+    document.getElementById('focusDet').innerHTML = fhtml;
 
     // Peak
-    const hd={};
-    entries.forEach(a=>{const h=Math.floor(t2m(a.start)/60);if(h>=0&&h<24){if(!hd[h])hd[h]={s:0,c:0,ws:0};hd[h].s+=a.focus;hd[h].c++;if(a.category==='Work'||a.category==='Development')hd[h].ws+=a.focus;}});
-    let bh=null,bs=0;
-    Object.keys(hd).forEach(h=>{const avg=hd[h].ws/Math.max(hd[h].c,1);if(avg>bs){bs=avg;bh=h;}});
-    document.getElementById('peakDet').innerHTML=bh!==null?`<div class="flex items-center gap-4"><div class="text-3xl font-bold text-green-400">${String(bh).padStart(2,'0')}:00</div><div><p class="text-sm text-gray-300">Peak performance window</p><p class="text-xs text-gray-500">Avg focus: ${bs.toFixed(1)}/5</p></div></div>`:'<p class="text-gray-500">Not enough data</p>';
+    var hd = {};
+    for (var i=0; i<entries.length; i++) {
+        var h = Math.floor(t2m(entries[i].start)/60);
+        if (h >= 0 && h < 24) {
+            if (!hd[h]) hd[h] = {s:0, c:0, ws:0};
+            hd[h].s += entries[i].focus;
+            hd[h].c++;
+            if (entries[i].category === 'Work' || entries[i].category === 'Development') hd[h].ws += entries[i].focus;
+        }
+    }
+    var bh = null, bs = 0;
+    for (var h in hd) {
+        var avg = hd[h].ws / Math.max(hd[h].c, 1);
+        if (avg > bs) { bs = avg; bh = h; }
+    }
+    var phtml = '';
+    if (bh !== null) {
+        phtml = '<div class="flex items-center gap-3"><div class="text-3xl fw-bold text-green">' + String(bh).padStart(2,'0') + ':00</div><div><p class="text-sm text-gray">Peak performance window</p><p class="text-xs text-gray" style="color:#6b7280;">Avg focus: ' + bs.toFixed(1) + '/5</p></div></div>';
+    } else {
+        phtml = '<p class="text-gray" style="color:#6b7280;">Not enough data</p>';
+    }
+    document.getElementById('peakDet').innerHTML = phtml;
 
+    // Charts
     renderCharts();
     genFeedback();
 }
 
 function renderCharts() {
-    Object.values(charts).forEach(c=>{if(c&&c.destroy)c.destroy();});
-    const total=entries.reduce((s,a)=>s+a.duration,0);
-    const cats=['Work','Personal','Rest','Development','Waste'];
-    const cd=cats.map(c=>entries.filter(a=>a.category===c).reduce((s,a)=>s+a.duration,0));
-    const c1=document.getElementById('catChart').getContext('2d');
-    charts.cat=new Chart(c1,{type:'doughnut',data:{labels:cats,datasets:[{data:cd,backgroundColor:['rgba(34,197,94,0.6)','rgba(139,92,246,0.6)','rgba(59,130,246,0.6)','rgba(234,179,8,0.6)','rgba(239,68,68,0.6)'],borderWidth:1}]},options:{responsive:true,plugins:{legend:{labels:{color:'#9ca3af',font:{family:'Inter'}}}}}});
+    for (var k in chartInstances) {
+        if (chartInstances[k]) {
+            chartInstances[k].destroy();
+        }
+    }
+    var total = 0;
+    for (var i=0; i<entries.length; i++) total += entries[i].duration;
+    var cats = ['Work','Personal','Rest','Development','Waste'];
+    var cd = [];
+    for (var i=0; i<cats.length; i++) {
+        var sum = 0;
+        for (var j=0; j<entries.length; j++) {
+            if (entries[j].category === cats[i]) sum += entries[j].duration;
+        }
+        cd.push(sum);
+    }
+    var ctx1 = document.getElementById('catChart').getContext('2d');
+    chartInstances.cat = new Chart(ctx1, {
+        type: 'doughnut',
+        data: {
+            labels: cats,
+            datasets: [{
+                data: cd,
+                backgroundColor: [
+                    'rgba(34,197,94,0.6)', 'rgba(139,92,246,0.6)',
+                    'rgba(59,130,246,0.6)', 'rgba(234,179,8,0.6)',
+                    'rgba(239,68,68,0.6)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { labels: { color: '#9ca3af', font: { family: 'Segoe UI' } } }
+            }
+        }
+    });
 
-    const sorted=[...entries].sort((a,b)=>t2m(a.start)-t2m(b.start));
-    const c2=document.getElementById('focusLine').getContext('2d');
-    charts.fl=new Chart(c2,{type:'line',{labels:sorted.map(a=>a.start),datasets:[{label:'Focus',data:sorted.map(a=>a.focus),borderColor:'#6366f1',backgroundColor:'rgba(99,102,241,0.1)',tension:0.3,pointRadius:5,pointBackgroundColor:sorted.map(a=>a.category==='Waste'?'#ef4444':a.focus>=4?'#22c55e':a.focus>=3?'#eab308':'#f97316'),fill:true}]},options:{responsive:true,scales:{y:{beginAtZero:true,max:5,ticks:{color:'#9ca3af',stepSize:1},grid:{color:'rgba(107,114,128,0.1)'}},x:{ticks:{color:'#9ca3af',font:{family:'Inter',size:9}},grid:{display:false}}},plugins:{legend:{labels:{color:'#9ca3af',font:{family:'Inter'}}}}}});
-}
-
-function genFeedback() {
-    const total=entries.reduce((s,a)=>s+a.duration,0);
-    const waste=entries.filter(a=>a.category==='Waste').reduce((s,a)=>s+a.duration,0);
-    const work=entries.filter(a=>a.category==='Work').reduce((s,a)=>s+a.duration,0);
-    const dev=entries.filter(a=>a.category==='Development').reduce((s,a)=>s+a.duration,0);
-    const af=entries.reduce((s,a)=>s+a.focus,0)/entries.length;
-    const wr=waste/total, wkr=work/total;
-    const lfW=entries.filter(a=>a.focus<=2&&a.category==='Work');
-    const probs=[];
-    if(wr>0.15) probs.push({t:'Excessive time waste — over 15% of your day is lost',d:`${waste}m (${((wr)*100).toFixed(0)}%) spent on non-productive activities. Time is the only resource you cannot recover.`,s:'high',i:''});
-    if(wr>0.05&&!probs.find(p=>p.t.includes('waste'))) probs.push({t:'Noticeable time waste',d:`${waste}m (${((wr)*100).toFixed(0)}%) wasted. Even small waste compounds.`,s:'medium',i:'🟡'});
-    if(lfW.length) { const lm=lfW.reduce((s,a)=>s+a.duration,0); probs.push({t:`Low focus during work — ${lm}m of compromised output`,d:`${lfW.length} work entries with focus ≤2. Low focus equals wasted time.`,s:'high',i:''}); }
-    if(dev<30&&total>180) probs.push({t:'Near-zero development time',d:`Only ${dev}m for growth out of ${total}m. No development means stagnation.`,s:'medium',i:'🟡'});
-    if(wkr<0.4&&total>240) probs.push({t:'Work ratio below 40%',d:`Only ${((wkr)*100).toFixed(0)}% is actual work.`,s:'high',i:''});
-    const nn=entries.filter(a=>!a.notes).length;
-    if(probs.length<3) probs.push({t:'Insufficient documentation',d:`${nn}/${entries.length} entries lack notes.`,s:'low',i:'⚪'});
-    if(probs.length<3) probs.push({t:'Unbalanced schedule',d:'Lack of structure destroys momentum.',s:'low',i:'⚪'});
-    const sc={high:'border-red-500 bg-red-500/5 text-red-300',medium:'border-yellow-500 bg-yellow-500/5 text-yellow-300',low:'border-gray-500 bg-gray-500/5 text-gray-300'};
-    document.getElementById('probList').innerHTML=probs.slice(0,3).map((p,i)=>`<div class="alert-box ${sc[p.s]} rounded-lg af" style="animation-delay:${i*0.1}s"><div class="flex gap-3"><span class="text-xl">${p.i}</span><div><h4 class="font-bold text-sm mb-1">${p.t}</h4><p class="text-xs text-gray-400 leading-relaxed">${p.d}</p></div></div></div>`).join('');
-
-    const fixes=[];
-    if(wr>0.1) fixes.push({t:'Implement strict time blocking',d:'Divide your day into defined blocks. One task per block. Use 90-minute deep work sessions.',a:'Plan 3 blocks tomorrow: Work, Development, Rest',i:'⏰'});
-    else fixes.push({t:'Optimize transition periods',d:'Use gaps between activities for quick productive tasks.',a:'Prepare a "10-minute tasks" list',i:'⏰'});
-    if(af<3) fixes.push({t:'Eliminate distractions during work',d:`Avg focus is ${af.toFixed(1)}/5. Turn off notifications.`,a:'Enable Do Not Disturb during all work sessions',i:'🎯'});
-    else fixes.push({t:'Protect peak focus window',d:`Focus is decent at ${af.toFixed(1)}/5. Guard your best hour.`,a:'Schedule hardest task during peak hour',i:'🎯'});
-    fixes.push({t:'Commit to 60 minutes of daily development',d:dev>0?`Currently ${dev}m. Increase to 60 minimum.`:'Zero development. Allocate 60 minutes daily.',a:'Pick one skill to improve this week',i:'📚'});
-    document.getElementById('fixList').innerHTML=fixes.map((f,i)=>`<div class="alert-box border-green-500 bg-green-500/5 rounded-lg af" style="animation-delay:${i*0.1}s"><div class="flex gap-3"><span class="text-xl">${f.i}</span><div><h4 class="font-bold text-sm text-green-300 mb-1">${f.t}</h4><p class="text-xs text-gray-400 mb-2">${f.d}</p><div class="bg-green-500/10 border border-green-500/20 rounded px-3 py-2"><span class="text-xs text-green-400 font-bold">Action:</span><span class="text-xs text-green-300 ml-1">${f.a}</span></div></div></div></div>`).join('');
-
-    const sc2=Math.min(100,Math.round(wkr*35+(af/5)*30+(dev/total)*20+(1-wr)*15));
-    let v='';
-    if(sc2>=80) v=`<p class="mb-2"><strong class="text-green-400">Solid day — don't get complacent.</strong></p><p class="text-gray-400 mb-2">Score: ${sc2}/100. Keep optimizing the weak spots.</p><p class="text-red-400 font-bold text-xs mt-3">Tomorrow is a chance to improve.</p>`;
-    else if(sc2>=50) v=`<p class="mb-2"><strong class="text-yellow-400">Mediocre — requires urgent correction.</strong></p><p class="text-gray-400 mb-2">Score: ${sc2}/100. You're consuming time without sufficient return.</p><ul class="text-gray-400 text-xs space-y-1 mt-2 list-disc list-inside">${wr>0.1?`<li>${((wr)*100).toFixed(0)}% wasted.</li>`:''}${af<3?`<li>Avg focus ${af.toFixed(1)}/5.</li>`:''}${wkr<0.5?`<li>Less than 50% productive.</li>`:''}</ul><p class="text-red-500 font-bold text-xs mt-3">No excuses. Change habits now.</p>`;
-    else v=`<p class="mb-2"><strong class="text-red-500 pulse-red">Critical — immediate review required.</strong></p><p class="text-gray-400 mb-2">Score: ${sc2}/100. You spent your day without direction.</p><ul class="text-gray-400 text-xs space-y-1 mt-2 list-disc list-inside"><li>Wasted: ${waste}m</li><li>Work ratio: ${((wkr)*100).toFixed(0)}%</li><li>Focus: ${af.toFixed(1)}/5</li></ul><p class="text-red-500 font-bold text-sm mt-3">⚠️ Do not ignore these results. No excuses. Only results.</p>`;
-    document.getElementById('verdict').innerHTML=v;
-}
-
-function switchTab(t) {
-    ['table','analysis','feedback'].forEach(k=>{
-        document.getElementById('content-'+k).classList.toggle('hidden',k!==t);
-        document.getElementById('tab-'+k).className=k===t?'tab-btn active':'tab-btn';
+    var sorted = entries.slice().sort(function(a,b){ return t2m(a.start) - t2m(b.start); });
+    var labels = [], data = [], colors = [];
+    for (var i=0; i<sorted.length; i++) {
+        labels.push(sorted[i].start);
+        data.push(sorted[i].focus);
+        colors.push(sorted[i].category === 'Waste' ? '#ef4444' : (sorted[i].focus >= 4 ? '#22c55e' : (sorted[i].focus >= 3 ? '#eab308' : '#f97316')));
+    }
+    var ctx2 = document.getElementById('focusLine').getContext('2d');
+    chartInstances.fl = new Chart(ctx2, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Focus',
+                data: data,
+                borderColor: '#6366f1',
+                backgroundColor: 'rgba(99,102,241,0.1)',
+                tension: 0.3,
+                pointRadius: 5,
+                pointBackgroundColor: colors,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true, max: 5,
+                    ticks: { color: '#9ca3af', stepSize: 1 },
+                    grid: { color: 'rgba(107,114,128,0.15)' }
+                },
+                x: {
+                    ticks: { color: '#9ca3af', font: { family: 'Segoe UI', size: 10 } },
+                    grid: { display: false }
+                }
+            },
+            plugins: {
+                legend: { labels: { color: '#9ca3af', font: { family: 'Segoe UI' } } }
+            }
+        }
     });
 }
 
+function genFeedback() {
+    var total = 0, work = 0, waste = 0, dev = 0, sumFocus = 0;
+    for (var i=0; i<entries.length; i++) {
+        total += entries[i].duration;
+        sumFocus += entries[i].focus;
+        if (entries[i].category === 'Work') work += entries[i].duration;
+        if (entries[i].category === 'Waste') waste += entries[i].duration;
+        if (entries[i].category === 'Development') dev += entries[i].duration;
+    }
+    var avgFocus = sumFocus / entries.length;
+    var wr = waste / total;
+    var wkr = work / total;
+    var lfW = entries.filter(function(a){ return a.focus <= 2 && a.category === 'Work'; });
+
+    var probs = [];
+    if (wr > 0.15) probs.push({t:'Excessive time waste \u2014 over 15% of your day is lost', d:waste + 'm (' + Math.round(wr*100) + '%) on non-productive activities. Time is the only resource you cannot recover.', s:'high', i:'\u2B55'});
+    if (wr > 0.05 && !probs.find(function(p){ return p.t.indexOf('waste') !== -1; })) probs.push({t:'Noticeable time waste', d:waste + 'm (' + Math.round(wr*100) + '%) wasted.', s:'medium', i:'\u{1F7E1}'});
+    if (lfW.length) {
+        var lm = 0; for(var i=0;i<lfW.length;i++) lm += lfW[i].duration;
+        probs.push({t:'Low focus during work \u2014 ' + lm + 'm compromised', d:lfW.length + ' work entries with focus \u22642.', s:'high', i:'\u2B55'});
+    }
+    if (dev < 30 && total > 180) probs.push({t:'Near-zero development time', d:'Only ' + dev + 'm for growth out of ' + total + 'm.', s:'medium', i:'\u{1F7E1}'});
+    if (wkr < 0.4 && total > 240) probs.push({t:'Work ratio below 40%', d:'Only ' + Math.round(wkr*100) + '% is actual work.', s:'high', i:'\u2B55'});
+    var nn = entries.filter(function(a){ return !a.notes; }).length;
+    if (probs.length < 3) probs.push({t:'Insufficient documentation', d:nn + '/' + entries.length + ' entries lack notes.', s:'low', i:'\u26AA'});
+    if (probs.length < 3) probs.push({t:'Unbalanced schedule', d:'Lack of structure destroys momentum.', s:'low', i:'\u26AA'});
+
+    var sc = {high:'alert-red', medium:'alert-yellow', low:'alert-gray'};
+    var phtml = '';
+    for (var i=0; i<Math.min(probs.length, 3); i++) {
+        phtml += '<div class="alert ' + sc[probs[i].s] + ' fade" style="animation-delay:' + (i*0.1) + 's;">';
+        phtml += '<div class="flex items-center gap-2"><span class="text-xl">' + probs[i].i + '</span><div><h4 class="fw-bold text-sm mb-1">' + probs[i].t + '</h4><p class="text-xs leading-relaxed" style="color:#9ca3af;margin:0;">' + probs[i].d + '</p></div></div></div>';
+    }
+    document.getElementById('probList').innerHTML = phtml;
+
+    var fixes = [];
+    if (wr > 0.1) fixes.push({t:'Implement strict time blocking', d:'Divide your day into defined blocks. One task per block. 90-min deep work.', a:'Plan 3 blocks: Work, Development, Rest', i:'\u23F0'});
+    else fixes.push({t:'Optimize transition periods', d:'Use gaps for quick productive tasks.', a:'Prepare a "10-minute tasks" list', i:'\u23F0'});
+    if (avgFocus < 3) fixes.push({t:'Eliminate distractions during work', d:'Avg focus is ' + avgFocus.toFixed(1) + '/5. Turn off notifications.', a:'Enable Do Not Disturb during work', i:'\u{1F3AF}'});
+    else fixes.push({t:'Protect peak focus window', d:'Focus is decent at ' + avgFocus.toFixed(1) + '/5. Guard your best hour.', a:'Schedule hardest task during peak hour', i:'\u{1F3AF}'});
+    fixes.push({t:'Commit to 60 min of daily development', d:dev > 0 ? 'Currently ' + dev + 'm. Increase to 60.' : 'Zero development. Allocate 60 min daily.', a:'Pick one skill to improve this week', i:'\u{1F4DA}'});
+
+    var fhtml = '';
+    for (var i=0; i<fixes.length; i++) {
+        fhtml += '<div class="alert alert-green fade" style="animation-delay:' + (i*0.1) + 's;">';
+        fhtml += '<div class="flex items-center gap-2"><span class="text-xl">' + fixes[i].i + '</span><div>';
+        fhtml += '<h4 class="fw-bold text-sm mb-1 text-green">' + fixes[i].t + '</h4>';
+        fhtml += '<p class="text-xs leading-relaxed" style="color:#9ca3af;margin:0 0 8px;">' + fixes[i].d + '</p>';
+        fhtml += '<div style="padding:6px 10px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.15);border-radius:6px;">';
+        fhtml += '<span class="text-xs fw-bold text-green">Action:</span> <span class="text-xs text-green" style="color:#86efac;">' + fixes[i].a + '</span></div>';
+        fhtml += '</div></div></div>';
+    }
+    document.getElementById('fixList').innerHTML = fhtml;
+
+    var sc2 = Math.min(100, Math.round(wkr*35 + (avgFocus/5)*30 + (dev/total)*20 + (1-wr)*15));
+    var v = '';
+    if (sc2 >= 80) {
+        v = '<p class="mb-2"><strong class="text-green">Solid day \u2014 don\'t get complacent.</strong></p>';
+        v += '<p class="text-sm" style="color:#9ca3af;margin-bottom:8px;">Score: ' + sc2 + '/100. Keep optimizing weak spots.</p>';
+        v += '<p class="text-xs text-red fw-bold mt-2">Tomorrow is a chance to improve.</p>';
+    } else if (sc2 >= 50) {
+        v = '<p class="mb-2"><strong class="text-yellow">Mediocre \u2014 requires urgent correction.</strong></p>';
+        v += '<p class="text-sm" style="color:#9ca3af;margin-bottom:8px;">Score: ' + sc2 + '/100. Consuming time without return.</p>';
+        v += '<ul class="text-xs" style="color:#9ca3af;margin:0 0 8px;padding-left:20px;">';
+        if (wr > 0.1) v += '<li>' + Math.round(wr*100) + '% wasted.</li>';
+        if (avgFocus < 3) v += '<li>Avg focus ' + avgFocus.toFixed(1) + '/5.</li>';
+        if (wkr < 0.5) v += '<li>Less than 50% productive.</li>';
+        v += '</ul>';
+        v += '<p class="text-xs text-red fw-bold mt-2">No excuses. Change habits now.</p>';
+    } else {
+        v = '<p class="mb-2"><strong class="text-red fw-bold" style="animation:pulseAnim 2s infinite;">Critical \u2014 immediate review required.</strong></p>';
+        v += '<p class="text-sm" style="color:#9ca3af;margin-bottom:8px;">Score: ' + sc2 + '/100. Day without direction.</p>';
+        v += '<ul class="text-xs" style="color:#9ca3af;margin:0 0 8px;padding-left:20px;">';
+        v += '<li>Wasted: ' + waste + 'm</li>';
+        v += '<li>Work ratio: ' + Math.round(wkr*100) + '%</li>';
+        v += '<li>Focus: ' + avgFocus.toFixed(1) + '/5</li>';
+        v += '</ul>';
+        v += '<p class="text-sm text-red fw-bold mt-2">Do not ignore these results. No excuses. Only results.</p>';
+    }
+    document.getElementById('verdict').innerHTML = v;
+}
+
+function switchTab(name, btn) {
+    var ids = ['table','analysis','feedback'];
+    for (var i=0; i<ids.length; i++) {
+        var el = document.getElementById('content-' + ids[i]);
+        if (el) {
+            if (ids[i] === name) el.classList.remove('hidden');
+            else el.classList.add('hidden');
+        }
+    }
+    var btns = document.querySelectorAll('.tab-btn');
+    for (var i=0; i<btns.length; i++) btns[i].classList.remove('active');
+    if (btn) btn.classList.add('active');
+}
+
 function loadSample() {
-    entries=[
+    entries = [
         {id:1,start:'06:00',end:'06:30',name:'Wake up & prep',category:'Personal',focus:2,notes:'Slow morning',duration:30},
         {id:2,start:'06:30',end:'07:30',name:'Breakfast & news',category:'Waste',focus:1,notes:'Scrolled Twitter 25m',duration:60},
         {id:3,start:'07:30',end:'09:00',name:'Email & calls',category:'Work',focus:3,notes:'Replied to 12 emails',duration:90},
         {id:4,start:'09:00',end:'10:00',name:'Team meeting',category:'Work',focus:2,notes:'No clear agenda',duration:60},
         {id:5,start:'10:00',end:'10:30',name:'Coffee & social media',category:'Waste',focus:1,notes:'Lost in reels',duration:30},
-        {id:6,start:'10:30',end:'12:30',name:'Core project work',category:'Work',focus:4,notes:'Deep work',duration:120},
+        {id:6,start:'10:30',end:'12:30',name:'Core project work',category:'Work',focus:4,notes:'Deep work session',duration:120},
         {id:7,start:'12:30',end:'13:30',name:'Lunch break',category:'Rest',focus:2,notes:'Long lunch',duration:60},
         {id:8,start:'13:30',end:'14:00',name:'Read technical book',category:'Development',focus:4,notes:'Deep Work chapter',duration:30},
         {id:9,start:'14:00',end:'15:00',name:'Code review',category:'Work',focus:3,notes:'PR reviews',duration:60},
@@ -390,30 +939,45 @@ function loadSample() {
         {id:11,start:'15:30',end:'17:00',name:'Weekly report',category:'Work',focus:2,notes:'Started late',duration:90},
         {id:12,start:'17:00',end:'17:30',name:'Personal calls',category:'Personal',focus:3,notes:'Family call',duration:30}
     ];
-    refresh(); toast('Demo data loaded','success');
+    refresh();
+    toast('Demo data loaded','success');
 }
 
 function clearAll() {
-    if(!entries.length)return;
-    if(confirm('Clear all data?')){entries=[];refresh();toast('Cleared','info');}
+    if (!entries.length) return;
+    if (confirm('Clear all data?')) { entries = []; refresh(); toast('Cleared','info'); }
 }
 
-function save(){localStorage.setItem('at_data',JSON.stringify(entries));}
-function load(){try{const s=localStorage.getItem('at_data');if(s)entries=JSON.parse(s);}catch(e){}refresh();}
-
-function toast(msg,type='info'){
-    document.querySelector('.toast')?.remove();
-    const cols={success:'bg-green-500/20 border-green-500/50 text-green-300',error:'bg-red-500/20 border-red-500/50 text-red-300',info:'bg-blue-500/20 border-blue-500/50 text-blue-300'};
-    const t=document.createElement('div');
-    t.className=`toast ${cols[type]} border rounded-lg`;
-    t.textContent=msg;
-    document.body.appendChild(t);
-    setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity 0.3s';setTimeout(()=>t.remove(),300);},2500);
+function saveData() {
+    try { localStorage.setItem('at_data', JSON.stringify(entries)); } catch(e) {}
 }
 
-document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter')addEntry();});
-load();
+function loadData() {
+    try {
+        var s = localStorage.getItem('at_data');
+        if (s) entries = JSON.parse(s);
+    } catch(e) {}
+    refresh();
+}
+
+function toast(msg, type) {
+    var box = document.getElementById('toastBox');
+    var t = document.createElement('div');
+    t.className = 'toast toast-' + (type || 'info');
+    t.textContent = msg;
+    box.appendChild(t);
+    setTimeout(function() {
+        t.style.opacity = '0';
+        t.style.transition = 'opacity 0.3s';
+        setTimeout(function() { if(t.parentNode) t.parentNode.removeChild(t); }, 300);
+    }, 2500);
+}
+
+document.addEventListener('keydown', function(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') addEntry();
+});
+
+loadData();
 </script>
 </body>
 </html>
-
